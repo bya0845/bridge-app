@@ -7,14 +7,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Marked.js for Markdown rendering -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-      // Configure marked.js to properly render images and links
       marked.setOptions({
         breaks: true,
         gfm: true,
@@ -24,7 +23,7 @@
   </head>
   <body>
     <div class="sidebar">
-      <h1>New York State Region 8 Bridge App</h1>
+      <h1>NY Bridge Database App</h1><br>
       <ul>
         <li>
           <button class="menu-btn active" onclick="showPage('overview')">
@@ -32,21 +31,21 @@
           </button>
         </li>
         <li>
-          <button class="menu-btn" onclick="showPage('statistics')">
-            Statistics
-          </button>
-        </li>
-        <li>
           <button class="menu-btn" onclick="showPage('ai-assistant')">
-            AI Assistant
+            AI Search
           </button>
         </li>
         <li>
           <button class="menu-btn" onclick="showPage('search')">
-            Search Bridges
+            Bridge Lookup
           </button>
         </li>
         <li>
+          <button class="menu-btn" onclick="showPage('statistics')">
+            View Statistics
+          </button>
+        </li>
+        <!-- <li>
           <button class="menu-btn" onclick="showPage('inspections')">
             Log Inspection
           </button>
@@ -55,51 +54,60 @@
           <button class="menu-btn" onclick="showPage('manage-inspections')">
             Manage Inspections
           </button>
-        </li>
+        </li> -->
       </ul>
     </div>
 
     <div class="main">
       <!-- Overview Page -->
       <div id="overview" class="page active">
-        <h2>New York State Region 8 Bridge Inspection Application</h2>
+        <h2>Bridge Database App</h2>
 
-        <div class="intro-section">
-          <h3 style="color: #003A70; margin-top: 0">About This Application</h3>
-          <p>
-            Comprehensive bridge data and inspection management for <strong>New York State Region 8</strong>, 
-            covering 7 counties: Columbia, Dutchess, Orange, Putnam, Rockland, Ulster, and Westchester.
+        <div class="intro-section" style="background: #e6edf5; border-left: 4px solid #003A70;">
+          <h3 style="color: #003A70; margin-top: 0">About</h3>
+          <p style="font-size: 19px; line-height: 1.6;">
+            <strong>This is a demo application that implements a natural language interface on top of a database of bridges in New York State Region 8 (Lower Hudson).
+              It uses a fine-tuned Google T5-Small model (60M parameters) to parse plain English queries into REST API endpoints.
+              The model was trained on ~700 synthetic examples and is lightweight enough to run offline without cloud dependencies.<br><br>
+
+              To get started, use
+              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">AI Search</span>
+              to query the database in natural language,
+              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Bridge Lookup</span>
+              to explore the database via traditional filters, or click on
+              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">View Statistics</span>
+              to get bridge count and span stats by county.<br><br>
+
+              The database includes bridges from the following counties:</strong>
           </p>
+          <ul class="county-list">
+            <li>Columbia</li>
+            <li>Dutchess</li>
+            <li>Orange</li>
+            <li>Putnam</li>
+            <li>Rockland</li>
+            <li>Ulster</li>
+            <li>Westchester</li>
+          </ul>
           <button class="search-btn" onclick="getBridgeCount()" style="width: auto; margin-top: 15px">
-            Get Total Bridge Count
+            Total Bridge Count
           </button>
-          <div id="countResult" style="margin-top: 15px"></div>
+          <div id="countResult" style="margin-top: 20px;"></div>
         </div>
-
-        <div class="intro-section">
-          <h3 style="color: #003A70; margin-top: 0">Key Features</h3>
+        <div class="intro-section" style="background: #e8eef5; border-left: 4px solid #003A70;">
+          <h3 style="color: #003A70; margin-top: 0">Other App Features</h3>
           <ul style="margin-left: 20px; margin-top: 10px; line-height: 2">
-            <li><strong>AI Assistant:</strong> Ask questions in plain English and get intelligent answers</li>
-            <li><strong>Advanced Search:</strong> Find bridges by ID, county, features carried/crossed, and span count</li>
-            <li><strong>Statistics:</strong> Analyze bridge distribution by county and structural characteristics</li>
-            <li><strong>Map Integration:</strong> View bridge locations on Google Maps</li>
-            <li><strong>Inspection Logging:</strong> Record and manage bridge inspection data</li>
+            <li><strong>SQL Search:</strong> Find bridges by ID, county, features carried/crossed, and span count</li>
+            <li><strong>Map Integration (WIP):</strong> View bridge locations on Google Maps</li>
           </ul>
         </div>
 
-        <div class="intro-section" style="background: linear-gradient(135deg, #003A70 0%, #002855 100%); color: white; border: none;">
-          <h3 style="color: #FFB81C; margin-top: 0">Getting Started</h3>
-          <p style="color: white;">
-            Try the <strong>AI Assistant</strong> for natural language queries, use <strong>Search Bridges</strong> 
-            to explore the database, or view <strong>Statistics</strong> for regional analysis.
-          </p>
-        </div>
       </div>
 
       <!-- AI Assistant Page -->
       <div id="ai-assistant" class="page">
         <div class="agent-section">
-          <h2 class="agent-title">AI Assistant</h2>
+          <h2 class="agent-title">AI Search</h2>
 
           <div class="status-line">
             <span id="statusText">Checking agent status...</span>
@@ -114,16 +122,7 @@
         <div class="examples-container">
           <div class="examples-title">Example Questions</div>
           <div class="example-queries" id="exampleQueries">
-            <span class="example-query" onclick="setQuery('How many bridges are there?')">How many bridges are there?</span>
-            <span class="example-query" onclick="setQuery('Show statistics by county')">Show statistics by county</span>
-            <span class="example-query" onclick="setQuery('Show statistics by span count')">Show statistics by span count</span>
-            <span class="example-query" onclick="setQuery('Show me bridges')">Show me bridges</span>
-            <span class="example-query" onclick="setQuery('Bridges in Orange county')">Bridges in Orange county</span>
-            <span class="example-query" onclick="setQuery('Bridges in Westchester')">Bridges in Westchester</span>
-            <span class="example-query" onclick="setQuery('Bridges with 5 spans')">Bridges with 5 spans</span>
-            <span class="example-query" onclick="setQuery('Bridges with more than 3 spans')">Bridges with more than 3 spans</span>
-            <span class="example-query" onclick="setQuery('Orange county bridges with more than 2 spans')">Orange county bridges with more than 2 spans</span>
-            <span class="example-query" onclick="setQuery('Westchester bridges with at least 4 spans')">Westchester bridges with at least 4 spans</span>
+            <span class="loading-examples">Loading examples...</span>
           </div>
         </div>
       </div>
@@ -237,7 +236,7 @@
         </div>
 
         <div class="form-container">
-          <h3 style="color: #d32f2f; margin-top: 0;">⚠️ Delete Inspections by Bridge</h3>
+          <h3 style="color: #d32f2f; margin-top: 0;">Delete Inspections by Bridge</h3>
           <p style="color: #666; margin-bottom: 15px;">This will permanently delete all inspection records for the specified bridge.</p>
           <div class="form-group">
             <label>Bridge ID (BIN)</label>
@@ -248,9 +247,8 @@
         </div>
 
         <div class="form-container danger-zone">
-          <h3 style="color: #d32f2f; margin-top: 0;">🗑️ Delete All Inspections</h3>
+          <h3 style="color: #d32f2f; margin-top: 0;">Delete All Inspections</h3>
           <p style="color: #d32f2f; font-weight: bold; margin-bottom: 15px;">
-            ⚠️ WARNING: This will permanently delete ALL inspection records. This action cannot be undone.
           </p>
           <button class="search-btn delete-btn" onclick="deleteAllInspections()" style="width: auto;">Delete ALL Inspections</button>
           <div id="deleteAllResult"></div>
@@ -264,7 +262,7 @@
         <div class="search-page-container">
           <!-- Search Controls Section (Left) -->
           <div class="search-controls-section">
-            <h3 style="color: #1abc9c; margin-top: 0; margin-bottom: 15px;">🔍 Search Filters</h3>
+            <h3 style="color: #1abc9c; margin-top: 0; margin-bottom: 15px;">Search Filters</h3>
 
             <div class="search-form-stack">
               <div class="form-group">
@@ -308,7 +306,7 @@
             </div>
 
             <div class="search-buttons">
-              <button class="search-btn" onclick="searchBridges()">🔍 Search</button>
+              <button class="search-btn" onclick="searchBridges()">Search</button>
               <button class="search-btn" onclick="clearSearch()" style="background: #7f8c8d;">Clear</button>
             </div>
 

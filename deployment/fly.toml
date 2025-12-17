@@ -1,71 +1,21 @@
-# Fly.io Configuration for Bridge App
-# Deploy with: flyctl deploy
-
 app = "bridge-app"
-primary_region = "ewr"  # New York (change to your preferred region)
+primary_region = "ewr"
 
 [build]
-  dockerfile = "Dockerfile"
 
 [env]
-  # Database configuration (bundled SQLite)
-  DATABASE_TYPE = "sqlite"
-  SQLITE_PATH = "/data/bridges.db"
-  
-  # Storage configuration
-  STORAGE_TYPE = "local"
-  UPLOAD_DIR = "/data/uploads"
-  
-  # Model configuration
-  MODEL_PATH = "./fine_tuned_model"
-  
-  # Flask configuration
-  FLASK_ENV = "production"
   PORT = "8080"
+  SQLITE_PATH = "./src/data/bridges.db"
+  MODEL_CHECKPOINT_PATH = "results/checkpoints/t5-small_best.pth"
 
-# Mount persistent volume for database and uploads
-[mounts]
-  source = "data"
-  destination = "/data"
-
-# Service configuration
-[[services]]
+[http_service]
   internal_port = 8080
-  protocol = "tcp"
-  auto_stop_machines = false  # Keep machines running (prevent cold starts)
+  force_https = true
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
 
-  # HTTP service
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-    force_https = true
-
-  # HTTPS service
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-  # Health check
-  [[services.tcp_checks]]
-    interval = "15s"
-    timeout = "10s"
-    grace_period = "30s"
-
-  # HTTP health check
-  [[services.http_checks]]
-    interval = "30s"
-    timeout = "10s"
-    grace_period = "30s"
-    method = "GET"
-    path = "/api/agent/status"
-
-# VM configuration
-# Free tier: Use 2x shared-cpu-1x (256 MB each) = 512 MB total
-# Or upgrade to 1x with more RAM if needed
 [[vm]]
-  cpu_kind = "shared"
+  memory = '512mb'
+  cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512  # Adjust based on needs (256, 512, 1024, etc.)
-

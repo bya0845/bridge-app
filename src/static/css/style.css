@@ -5,7 +5,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   background: #f8faf9;
   color: #1a1a1a;
   display: flex;
@@ -15,6 +15,20 @@ body {
 a {
   color: #1a1a1a;
   text-decoration: none;
+}
+
+.county-list {
+  font-family: 'Inter', -apple-system, sans-serif;
+  margin: 0.5rem 0 1rem 1.5rem;
+  padding: 0;
+  font-weight: 800;
+}
+
+.county-list li {
+  font-family: 'Inter', -apple-system, sans-serif;
+  margin: 0.25rem 0;
+  line-height: 1.4;
+  font-weight: 800;
 }
 
 a:hover {
@@ -32,9 +46,11 @@ a:hover {
 }
 
 .sidebar h1 {
-  font-size: 20px;
-  margin-bottom: 30px;
-  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 25px; /* Oswald is condensed, so it needs to be slightly larger */
+  letter-spacing: 1px;
 }
 
 .sidebar ul {
@@ -45,30 +61,44 @@ a:hover {
   margin-bottom: 0;
 }
 
+body { font-family: 'Inter', sans-serif; }
+
 .sidebar button {
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 1px;
   width: 100%;
-  padding: 12px;
+  padding: 15px 18px; /* Larger padding for a substantial feel */
   background: #002855;
   color: #f5f5f5;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Defines the edges */
+  border-left: 5px solid #002244; /* darker accent on the left */
   text-align: left;
   cursor: pointer;
-  font-size: 14px;
-  margin-bottom: 5px;
-  border-radius: 6px;
-  transition: all 0.2s;
+  font-size: 13px;
+  margin-bottom: 10px;
+  border-radius: 0px; /* Makes them perfectly square */
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* Adds depth/pronunciation */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .sidebar button:hover {
-  background: #FFB81C;
-  color: #003A70;
-  font-weight: 600;
+  background: #004080;
+  border-left-color: #FFB81C; /* Gold accent appears on hover */
+  transform: translateY(-2px); /* Moves button up slightly */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  color: white;
 }
 
 .sidebar button.active {
-  background: #FFB81C;
-  color: #003A70;
-  font-weight: 600;
+  background: #001f3f;
+  color: #FFB81C;
+  border-left-color: #FFB81C;
+  font-weight: 700;
+  transform: none;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3); /* Inner shadow looks "pressed" */
 }
 
 /* Main Content */
@@ -79,16 +109,27 @@ a:hover {
 }
 
 h2 {
-  color: #1e4d2b;
-  margin-bottom: 20px;
-  font-size: 28px;
-  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: #003A70; /* Deep Blue */
+  margin-bottom: 25px;
+  font-size: 32px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 5px solid #FFB81C; /* Gold accent line */
+  padding-bottom: 10px;
+  display: inline-block; /* Border only underlines the text, not full width */
+  min-width: 50px;
 }
 
 h3 {
+  font-family: 'Montserrat', sans-serif;
   font-size: 20px;
-  color: #2d6a3e;
-  font-weight: 600;
+  color: #1e4d2b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+
 }
 
 /* Pages */
@@ -139,31 +180,51 @@ textarea:focus {
 }
 
 /* Buttons */
+/* Main Action Buttons - Square, Tactile, and Pronounced */
 button.search-btn {
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 1px;
   width: 100%;
-  padding: 12px 20px;
+  padding: 15px 20px;
   background: #003A70;
   color: #ffffff;
-  border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 500;
   margin-top: 10px;
-  min-height: 44px;
-  transition: all 0.2s;
+  min-height: 50px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+
+  /* The "Pronounced" Look */
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 0; /* Square edges */
+  border-bottom: 5px solid #002244; /* Dark thick bottom simulates depth */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Hover Effect */
 button.search-btn:hover {
-  background: #002855;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+  background: #004080;
+  border-bottom-color: #FFB81C; /* Gold accent appears on hover */
+  transform: translateY(-2px); /* Lifts up */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Active/Disabled States */
+button.search-btn:active {
+  transform: translateY(2px); /* Presses down */
+  border-bottom-width: 2px; /* Reduces depth */
+  box-shadow: none;
 }
 
 button.search-btn:disabled {
   background: #bdc3c7;
+  border-bottom-color: #95a5a6;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 button.delete-btn {
@@ -351,9 +412,9 @@ tr:hover {
 }
 
 .agent-title {
-  font-family: 'Inter', -apple-system, sans-serif;
-  font-size: 32px;
-  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 37px;
+  font-weight: 900;
   letter-spacing: -0.5px;
   color: #1e4d2b;
   margin: 0 0 30px 0;
@@ -361,7 +422,7 @@ tr:hover {
 }
 
 .status-line {
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-family: 'Inter', -apple-system, sans-serif;
   font-size: 13px;
   color: #2d6a3e;
   margin-bottom: 30px;
@@ -521,6 +582,7 @@ tr:hover {
 }
 
 /* Mobile Styles */
+/* Mobile Styles - Metro Transit Theme */
 @media (max-width: 768px) {
   body {
     flex-direction: column;
@@ -534,26 +596,71 @@ tr:hover {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
 
+  /* Mobile Sidebar Header - Heavy Metro Style */
   .sidebar h1 {
-    font-size: 24px;
+    font-family: 'Montserrat', sans-serif; /* Metro Theme Font */
+    font-weight: 800; /* Extra Bold */
+    font-size: 20px;
     margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 3px solid #FFB81C;
+    padding-bottom: 10px;
+    text-shadow: none; /* Cleaner look for Metro */
+    color: white;
+  }
+
+  /* Mobile Sidebar Buttons - Square "Tabs" */
+  .sidebar button {
+    font-family: 'Montserrat', sans-serif; /* Metro Theme Font */
+    padding: 12px 15px;
+    font-size: 13px;
+    margin-bottom: 0;
+
+    /* Square and Pronounced */
+    border-radius: 0;
+    background: #002855;
+    color: #f5f5f5;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    /* Adapt accent to bottom for horizontal list */
+    border-left: none;
+    border-bottom: 4px solid #002244;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    font-weight: 700; /* Bold for legibility */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap; /* Keeps text on one line */
+  }
+
+  /* Mobile Hover State */
+  .sidebar button:hover {
+    background: #004080;
+    border-bottom-color: #FFB81C; /* Gold accent on bottom */
+    transform: translateY(-2px);
+    color: white;
+  }
+
+  /* Mobile Active State */
+  .sidebar button.active {
+    background: #001f3f;
+    color: #FFB81C;
+    border-bottom-color: #FFB81C;
+    border-left: none;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
   }
 
   .sidebar ul {
     display: flex;
     gap: 5px;
     overflow-x: auto;
+    padding-bottom: 5px; /* Space for scrollbar/shadow */
   }
 
   .sidebar li {
     flex: 1;
-    min-width: 100px;
-  }
-
-  .sidebar button {
-    padding: 10px;
-    font-size: 14px;
-    margin-bottom: 0;
+    min-width: 120px; /* Slightly wider for the bolder font */
   }
 
   .main {
@@ -1277,6 +1384,14 @@ tr:hover {
   background: #003A70;
   color: white;
   border-color: #003A70;
+}
+
+.page-btn:disabled {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: #e0e0e0;
 }
 
 .page-btn.active {

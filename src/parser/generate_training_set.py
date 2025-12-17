@@ -179,7 +179,7 @@ class TrainingDataGenerator:
         """Generate carried/crossed feature queries"""
         for feature in self.carried:
             # URL encode features with spaces
-            encoded_feature = quote(feature, safe='')
+            encoded_feature = quote(feature, safe="")
             self.add_examples(
                 [
                     f"Bridges that carry {feature}",
@@ -194,7 +194,7 @@ class TrainingDataGenerator:
 
         for feature in self.crossed:
             # URL encode features with spaces
-            encoded_feature = quote(feature, safe='')
+            encoded_feature = quote(feature, safe="")
             self.add_examples(
                 [
                     f"Bridges that cross {feature}",
@@ -225,7 +225,7 @@ class TrainingDataGenerator:
 
         for county in self.counties[:3]:
             for feature in self.carried[:3]:
-                encoded_feature = quote(feature, safe='')
+                encoded_feature = quote(feature, safe="")
                 self.add_examples(
                     [
                         f"{feature} bridges in {county}",
@@ -237,7 +237,7 @@ class TrainingDataGenerator:
 
         for county in self.counties[:3]:
             for feature in self.crossed[:3]:
-                encoded_feature = quote(feature, safe='')
+                encoded_feature = quote(feature, safe="")
                 self.add_examples(
                     [
                         f"Bridges crossing {feature} in {county}",
@@ -331,7 +331,7 @@ class TrainingDataGenerator:
             ],
             "/api/bridges/search?county=Orange&carried=84i&min_spans=5",
         )
-        
+
         self.add_examples(
             [
                 "Orange county bridges on interstate with more than 4 spans",
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     # Save to src/data/ directory
     script_dir = Path(__file__).parent
     output_path = script_dir.parent / "data" / "training_data.json"
-    
+
     generator = TrainingDataGenerator()
     generator.logger.info(f"Will save training data to: {output_path}")
     generator.generate_all()

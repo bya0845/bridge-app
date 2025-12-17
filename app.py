@@ -67,7 +67,6 @@ WEATHER_OPTIONS = [
     "Mostly Cloudy",
 ]
 
-# AI-generated endpoints whitelist (read-only operations)
 ALLOWED_READ_ENDPOINTS = {
     "/api/bridges/count",
     "/api/bridges",
@@ -172,46 +171,6 @@ def validate_endpoint(endpoint):
 # ============================================================================
 
 
-@app.route("/query", methods=["POST"])
-def parse_query():
-    """Parse natural language query to API endpoint using AI model."""
-    data = request.get_json()
-    user_query = data.get("query", "")
-
-    if not user_query:
-        return jsonify({"error": "No query provided"}), 400
-
-    try:
-        with _parser_lock:
-            endpoint = parser.parse_query(user_query)
-
-        # SECURITY: Validate endpoint is read-only
-        if not validate_endpoint(endpoint):
-            logger.warning(f"Rejected unsafe AI-generated endpoint: '{user_query}' → {endpoint}")
-            return (
-                jsonify(
-                    {
-                        "error": "Generated endpoint not allowed (read-only queries only)",
-                        "endpoint": endpoint,
-                        "status": "rejected",
-                    }
-                ),
-                403,
-            )
-
-        return jsonify({"query": user_query, "endpoint": endpoint, "status": "success"})
-
-    except Exception as e:
-        logger.error(f"Query parsing error: {e}")
-        return jsonify({"error": str(e), "status": "error"}), 500
-
-
-@app.route("/health", methods=["GET"])
-def health():
-    """Health check endpoint."""
-    return jsonify({"status": "healthy", "model": "loaded"})
-
-
 @app.route("/api/agent/status", methods=["GET"])
 def agent_status():
     """Check if the AI agent is ready."""
@@ -223,45 +182,52 @@ def agent_query():
     """Process a natural language query and return formatted results."""
     data = request.get_json()
     user_query = data.get("query", "").strip()
+    page = data.get("page", 1)
+    per_page = data.get("per_page", 50)
+
+    logger.info(f"Received query: '{user_query}' (page={page}, per_page={per_page})")
 
     if not user_query:
         return jsonify({"success": False, "error": "Please enter a question"}), 400
 
     try:
-        # Parse the query to get API endpoint
         with _parser_lock:
             endpoint = parser.parse_query(user_query)
 
-        # SECURITY: Validate endpoint is read-only
-        if not validate_endpoint(endpoint):
-            logger.warning(f"Rejected unsafe AI-generated endpoint: '{user_query}' → {endpoint}")
-            return (
-                jsonify({"success": False, "error": "The agent cannot comprehend your query", "endpoint": endpoint}),
-                400,
-            )
+        logger.info(f"Model generated endpoint: {endpoint}")
 
-        # Call the generated API endpoint
-        full_url = f"http://127.0.0.1:{request.environ.get('SERVER_PORT', 5001)}{endpoint}"
+        if not validate_endpoint(endpoint):
+            return jsonify({"success": False, "error": "I cannot comprehend your query", "endpoint": endpoint}), 400
+
+        # FIX 1: Pass pagination parameters to the internal API call
+        separator = "&" if "?" in endpoint else "?"
+        full_url = f"http://127.0.0.1:{request.environ.get('SERVER_PORT', 8080)}{endpoint}{separator}page={page}&page_size={per_page}"
+
+        logger.info(f"Endpoint validated: {endpoint}, calling API: {full_url}")
 
         try:
             response = requests.get(full_url, timeout=10)
 
             if response.status_code == 404:
-                return jsonify(
-                    {"success": False, "error": "The agent cannot comprehend your query", "endpoint": endpoint}
-                )
+                return jsonify({"success": False, "error": "I cannot comprehend your query", "endpoint": endpoint}), 400
 
             if response.status_code != 200:
-                return jsonify(
-                    {"success": False, "error": "An error occurred while processing your query", "endpoint": endpoint}
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "An error occurred while processing your query",
+                            "endpoint": endpoint,
+                        }
+                    ),
+                    500,
                 )
 
             api_data = response.json()
-
-            # Determine result type and structure data for frontend formatting
             result_type = "unknown"
             data = None
             total_results = 0
+            total_pages = 1
 
             if "/count" in endpoint:
                 result_type = "count"
@@ -280,31 +246,64 @@ def agent_query():
 
             elif "/search" in endpoint or "/bridges" in endpoint:
                 result_type = "bridges"
-                results = api_data.get("results", api_data if isinstance(api_data, list) else [])
-                total_results = api_data.get("count", len(results))
-                # Limit to 100 for display
-                data = results[:100]
+
+                # FIX 2: Handle results that are already paginated by the internal API
+                if isinstance(api_data, dict) and "results" in api_data:
+                    # The internal API handled pagination (e.g., search_bridges)
+                    data = api_data["results"]
+                    # Get the TRUE total count from the DB, not just the page count
+                    total_results = api_data.get("total_count", len(data))
+                else:
+                    # Fallback for non-paginated endpoints (manual slicing)
+                    results = api_data if isinstance(api_data, list) else []
+                    total_results = len(results)
+                    start_idx = (page - 1) * per_page
+                    end_idx = start_idx + per_page
+                    data = results[start_idx:end_idx]
+
+                # Calculate total pages
+                total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 1
 
             elif "/inspections" in endpoint:
                 result_type = "inspections"
-                results = api_data if isinstance(api_data, list) else []
+                # Inspections endpoint currently returns a flat dict or list, usually not pre-paginated
+                # If api_data has 'inspections' key (from /api/inspections/<bin>)
+                if isinstance(api_data, dict) and "inspections" in api_data:
+                    results = api_data["inspections"]
+                else:
+                    results = api_data if isinstance(api_data, list) else []
+
                 total_results = len(results)
-                data = results[:50]
+                start_idx = (page - 1) * per_page
+                end_idx = start_idx + per_page
+                data = results[start_idx:end_idx]
+                total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 1
 
             else:
                 result_type = "raw"
                 data = api_data
                 total_results = 1
 
-            return jsonify(
-                {
-                    "success": True,
-                    "result_type": result_type,
-                    "data": data,
-                    "endpoint": endpoint,
-                    "total_results": total_results,
+            logger.info(f"Query successful: '{user_query}' -> {result_type} ({total_results} total, page {page})")
+
+            response_data = {
+                "success": True,
+                "result_type": result_type,
+                "data": data,
+                "endpoint": endpoint,
+                "total_results": total_results,
+            }
+
+            if result_type in ["bridges", "inspections"]:
+                response_data["pagination"] = {
+                    "page": page,
+                    "per_page": per_page,
+                    "total_pages": total_pages,
+                    "has_next": page < total_pages,
+                    "has_prev": page > 1,
                 }
-            )
+
+            return jsonify(response_data)
 
         except requests.RequestException as e:
             logger.error(f"Error calling API endpoint {endpoint}: {e}")
@@ -326,11 +325,10 @@ def agent_examples():
     examples = [
         "How many bridges are in the database?",
         "Show me bridges in Westchester county",
-        "Find bridges that carry highways",
-        "What bridges cross rivers?",
+        "Find bridges that carry 907G",
+        "Which bridges cross creeks in Ulster?",
         "Show me bridges with more than 3 spans",
         "Find all bridges in Orange county that have at least 2 spans",
-        "Show me recent inspections",
         "What are the bridge statistics by county?",
     ]
     return jsonify({"examples": examples})
@@ -384,7 +382,7 @@ def get_bridges():
 
 @app.route("/api/bridges/search")
 def search_bridges():
-    """Search bridges with multiple filters."""
+    """Search bridges with multiple filters and pagination."""
     try:
         bin_id = request.args.get("bin")
         county = request.args.get("county")
@@ -397,6 +395,14 @@ def search_bridges():
         sort_by = request.args.get("sort", "id")
         order = request.args.get("order", "asc")
         limit = request.args.get("limit", type=int)
+
+        # NEW: Pagination parameters
+        page = request.args.get("page", 1, type=int)
+        page_size = request.args.get("page_size", 50, type=int)  # Default 50 per page
+
+        # Ensure page is at least 1
+        page = max(1, page)
+        page_size = min(max(10, page_size), 200)  # Between 10 and 200
 
         query = "SELECT * FROM bridges WHERE 1=1"
         params = []
@@ -435,7 +441,6 @@ def search_bridges():
             query += " AND spans <= ?"
             params.append(max_spans)
 
-        # Safe sort handling
         VALID_SORTS = {
             "id": "id",
             "bin": "bin",
@@ -450,13 +455,35 @@ def search_bridges():
         sort_order = VALID_ORDERS.get(order.lower(), "ASC")
         query += f" ORDER BY {sort_col} {sort_order}"
 
-        if limit:
+        # NEW: Get total count before pagination
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()[0]
+
+        # NEW: Apply pagination (unless limit is specified for compatibility)
+        if not limit:
+            offset = (page - 1) * page_size
+            query += " LIMIT ? OFFSET ?"
+            params.extend([page_size, offset])
+        else:
             query += " LIMIT ?"
             params.append(limit)
 
         bridges = execute_bridge_query(query, params)
 
-        return jsonify({"count": len(bridges), "results": bridges})
+        # NEW: Return pagination metadata
+        return jsonify(
+            {
+                "count": len(bridges),
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total_count + page_size - 1) // page_size,
+                "results": bridges,
+            }
+        )
     except Exception as e:
         logger.error(f"Error in search_bridges: {e}")
         return jsonify({"error": "Internal server error"}), 500

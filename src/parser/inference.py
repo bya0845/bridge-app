@@ -56,8 +56,6 @@ class BridgeQueryParser:
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
         self.num_beams = num_beams
-
-        # Load model and tokenizer
         self._load_tokenizer()
 
         logger.info(f"Loading base model {self.model_name}")

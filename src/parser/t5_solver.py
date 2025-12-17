@@ -79,20 +79,20 @@ class T5Solver(BaseSolver):
     def __init__(self, config: T5TrainingConfig):
         """
         Initialize T5 solver from validated config.
-        
+
         Args:
             config: Validated T5 configuration object
         """
         # Load tokenizer BEFORE calling super().__init__()
         # because _load_dataset() needs it
         self.tokenizer = T5Tokenizer.from_pretrained(config.model_name, legacy=False)
-        
+
         super().__init__(config)
 
     def _load_model(self):
         """Load T5 model from Hugging Face or local checkpoint."""
         self.accelerator.print(f"Loading T5 model: {self.config.model_name}")
-        
+
         try:
             model = T5ForConditionalGeneration.from_pretrained(self.config.model_name)
             self.accelerator.print(f"Loaded model from {self.config.model_name}")
@@ -133,7 +133,7 @@ class T5Solver(BaseSolver):
             self.config.max_source_length,
             self.config.max_target_length,
         )
-        
+
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.batch_size,
@@ -287,7 +287,7 @@ class T5Solver(BaseSolver):
         self.accelerator.print("=" * 60)
 
         self.model.eval()
-        
+
         for query in self.config.test_queries:
             input_text = f"translate to api: {query}"
             inputs = self.tokenizer(

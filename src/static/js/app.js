@@ -82,109 +82,126 @@ function setQuery(q) {
   if (input) input.value = q;
 }
 
-async function queryAgent() {
-  const input = $('agentQuery');
-  const resultDiv = $('agentResult');
-  const btn = $('queryButton');
+async function queryAgent(page = 1, savedQuery = null) {
+  const input = $("agentQuery");
+  const resultDiv = $("agentResult");
+  const btn = $("queryButton");
   if (!input || !resultDiv || !btn) return;
 
-  const query = (input.value || '').trim();
+  // Use savedQuery if provided (from pagination click), otherwise read input
+  const query = savedQuery || (input.value || "").trim();
+
   if (!query) {
-    resultDiv.innerHTML = `<div class="error">Please enter a query.</div>`;
-    resultDiv.classList.add('visible');
+    resultDiv.innerHTML = `<div class="error">Please enter a question!</div>`;
+    resultDiv.classList.add("visible");
     return;
   }
 
-  // Check if this is a navigation query for statistics or overview
-  const lowerQuery = query.toLowerCase();
-  if (lowerQuery.includes('statistic')) {
-    // Navigate to statistics page
-    showPage('statistics');
-    
-    // Auto-click the appropriate statistics button
-    if (lowerQuery.includes('county')) {
-      setTimeout(() => getCountyStats(), 500);
-    } else if (lowerQuery.includes('span')) {
-      setTimeout(() => getSpanStats(), 500);
-    }
-    
-    // Clear the query and show message
-    input.value = '';
-    resultDiv.innerHTML = '<div class="success">✓ Navigated to Statistics page.</div>';
-    resultDiv.classList.add('visible');
-    return;
-  }
-  
-  // Check if this is a total count query
-  if ((lowerQuery.includes('how many') || lowerQuery.includes('total') || lowerQuery.includes('count')) && 
-      lowerQuery.includes('bridge') && 
-      !lowerQuery.includes('county') && 
-      !lowerQuery.includes('span') && 
-      !lowerQuery.includes('carries') && 
-      !lowerQuery.includes('carrying') && 
-      !lowerQuery.includes('cross') &&
-      !lowerQuery.includes('in ')) {
-    // Navigate to overview page and show count
-    showPage('overview');
-    
-    // Auto-click the count button
-    setTimeout(() => getBridgeCount(), 500);
-    
-    // Clear the query and show message
-    input.value = '';
-    resultDiv.innerHTML = '<div class="success">✓ Showing total bridge count on Overview page.</div>';
-    resultDiv.classList.add('visible');
-    return;
-  }
+  // Check shortcuts (statistics/count) only on the first page or fresh query
+  if (!savedQuery) {
+    const lowerQuery = query.toLowerCase();
 
-  btn.disabled = true;
-  btn.textContent = 'Working...';
-  resultDiv.innerHTML = `<div class="info">Processing...</div>`;
-  resultDiv.classList.add('visible');
-
-  try {
-    const resp = await fetch('/api/agent/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-    const data = await resp.json();
-
-    // Debug logging
-    console.log('Agent response:', data);
-
-    if (!resp.ok || !data.success) {
-      resultDiv.innerHTML = `<div class="error">${safeText(data.error || 'Agent error')}</div>`;
-      resultDiv.classList.add('visible');
+    // 1. Navigation shortcuts
+    if (lowerQuery.includes("statistic")) {
+      showPage("statistics");
+      if (lowerQuery.includes("county"))
+        setTimeout(() => getCountyStats(), 500);
+      else if (lowerQuery.includes("span"))
+        setTimeout(() => getSpanStats(), 500);
+      input.value = "";
+      resultDiv.innerHTML =
+        '<div class="success">✓ Navigated to Statistics page.</div>';
+      resultDiv.classList.add("visible");
       return;
     }
 
-    const formatted = formatAgentResults(data);
-    console.log('Formatted HTML length:', formatted.length);
+    // 2. Simple Count shortcut (local fetch)
+    const isGeneralCountQuery =
+      (lowerQuery.includes("how many") ||
+        lowerQuery.includes("total") ||
+        lowerQuery.includes("count")) &&
+      lowerQuery.includes("bridge") &&
+      !lowerQuery.includes("county") &&
+      !lowerQuery.includes("span") &&
+      !lowerQuery.includes("carries") &&
+      !lowerQuery.includes("carrying") &&
+      !lowerQuery.includes("cross") &&
+      !(/\bin\s+\w+/i.test(lowerQuery) && !lowerQuery.includes("in the"));
+
+    if (isGeneralCountQuery) {
+      try {
+        const resp = await fetch("/api/bridges/count");
+        const data = await resp.json();
+        resultDiv.innerHTML = `<div class="success"><strong>${data.total_bridges.toLocaleString()}</strong> bridges</div>`;
+        resultDiv.classList.add("visible");
+        input.value = "";
+      } catch (e) {
+        resultDiv.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+        resultDiv.classList.add("visible");
+      }
+      return;
+    }
+  }
+
+  // Standard AI Query
+  btn.disabled = true;
+  btn.textContent = "Working...";
+
+  // Only show "Processing" on first load, not pagination (optional, but keeps UI cleaner)
+  if (page === 1) {
+    resultDiv.innerHTML = `<div class="info">Processing...</div>`;
+    resultDiv.classList.add("visible");
+  }
+
+  try {
+    // Pass 'page' in the request body
+    const resp = await fetch("/api/agent/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, page }),
+    });
+    const data = await resp.json();
+
+    console.log("Agent response:", data);
+
+    if (!resp.ok || !data.success) {
+      resultDiv.innerHTML = `<div class="error">${safeText(
+        data.error || "Agent error"
+      )}</div>`;
+      resultDiv.classList.add("visible");
+      return;
+    }
+
+    // Pass the 'query' to formatAgentResults so it can generate pagination links
+    const formatted = formatAgentResults(data, query);
     resultDiv.innerHTML = formatted;
-    resultDiv.classList.add('visible');
+    resultDiv.classList.add("visible");
+
+    // If this was a manual search (not pagination), clear input
+    if (!savedQuery) {
+      // input.value = ''; // Optional: uncomment if you want to clear input after search
+    }
   } catch (e) {
-    console.error('Error in queryAgent:', e);
-    resultDiv.innerHTML = `<div class="error">${safeText(e.message || e)}</div>`;
-    resultDiv.classList.add('visible');
+    console.error("Error in queryAgent:", e);
+    resultDiv.innerHTML = `<div class="error">${safeText(
+      e.message || e
+    )}</div>`;
+    resultDiv.classList.add("visible");
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Ask';
+    btn.textContent = "Ask";
   }
 }
 
-function formatAgentResults(data) {
-  const { result_type, data: resultData, total_results, endpoint } = data;
-
-  // Debug logging
-  console.log('formatAgentResults called with:', {
+function formatAgentResults(data, currentQuery) {
+  // Destructure 'pagination' from the response
+  const {
     result_type,
-    resultData,
+    data: resultData,
     total_results,
     endpoint,
-    isArray: Array.isArray(resultData),
-    length: Array.isArray(resultData) ? resultData.length : 'not array'
-  });
+    pagination,
+  } = data;
 
   if (!resultData || (Array.isArray(resultData) && resultData.length === 0)) {
     return '<div class="info">No results found.</div>';
@@ -193,18 +210,39 @@ function formatAgentResults(data) {
   let html = '<div class="agent-response">';
   html += `<div class="agent-response-header">`;
   html += `<span class="agent-response-title">Results</span>`;
-  html += `<span class="agent-response-endpoint">API: ${safeText(endpoint)}</span>`;
-  html += '</div>';
+  html += `<span class="agent-response-endpoint">API: ${safeText(
+    endpoint
+  )}</span>`;
+  html += "</div>";
+
+  // --- PAGINATION LOGIC START ---
+  if (pagination && pagination.total_pages > 1) {
+    // Escape quotes in query for the onclick attribute
+    const safeQuery = currentQuery.replace(/'/g, "\\'");
+
+    html += `<div class="pagination-controls" style="margin-bottom: 15px;">
+      <button onclick="queryAgent(${pagination.page - 1}, '${safeQuery}')"
+              ${!pagination.has_prev ? "disabled" : ""}
+              class="page-btn">← Previous</button>
+      <span style="margin: 0 15px;">Page ${pagination.page} of ${
+      pagination.total_pages
+    }</span>
+      <button onclick="queryAgent(${pagination.page + 1}, '${safeQuery}')"
+              ${!pagination.has_next ? "disabled" : ""}
+              class="page-btn">Next →</button>
+    </div>`;
+  }
+  // --- PAGINATION LOGIC END ---
+
   html += '<div class="copyable-table-container">';
-  html += '<button class="copy-table-btn" onclick="copyTableToClipboard(this)">📋 Copy as CSV</button>';
+  html +=
+    '<button class="copy-table-btn" onclick="copyTableToClipboard(this)">📋 Copy as CSV</button>';
   html += '<div class="table-wrapper"><table class="copyable-table">';
 
   switch (result_type) {
     case "count":
       html += "<thead><tr><th>Metric</th><th>Value</th></tr></thead>";
-      html += "<tbody>";
-      html += `<tr><td>Total Bridges</td><td>${resultData.total_bridges}</td></tr>`;
-      html += "</tbody>";
+      html += `<tbody><tr><td>Total Bridges</td><td>${resultData.total_bridges}</td></tr></tbody>`;
       break;
 
     case "group_by_county":
@@ -229,12 +267,16 @@ function formatAgentResults(data) {
       break;
 
     case "bridges":
-      console.log("Rendering bridges table with", resultData.length, "rows");
       html +=
         "<thead><tr><th>#</th><th>BIN</th><th>County</th><th>Carries</th><th>Crosses</th><th>Spans</th><th>Location</th><th>Maps</th></tr></thead>";
       html += "<tbody>";
       resultData.forEach((bridge, idx) => {
-        console.log("Bridge row", idx, ":", bridge);
+        // Calculate correct row number based on page
+        const baseIndex = pagination
+          ? (pagination.page - 1) * pagination.per_page
+          : 0;
+        const rowNum = baseIndex + idx + 1;
+
         const lat = bridge.latitude || "";
         const lng = bridge.longitude || "";
         const mapsLink =
@@ -243,7 +285,7 @@ function formatAgentResults(data) {
             : "N/A";
 
         html += `<tr>
-            <td>${idx + 1}</td>
+            <td>${rowNum}</td>
             <td>${bridge.bin || "N/A"}</td>
             <td>${bridge.county || "N/A"}</td>
             <td>${bridge.carried || "N/A"}</td>
@@ -254,9 +296,6 @@ function formatAgentResults(data) {
           </tr>`;
       });
       html += "</tbody>";
-      if (total_results > resultData.length) {
-        html += `<tfoot><tr><td colspan="8" style="text-align: center; font-style: italic;">Showing first ${resultData.length} of ${total_results} results</td></tr></tfoot>`;
-      }
       break;
 
     case "inspections":
@@ -278,55 +317,55 @@ function formatAgentResults(data) {
 
     default:
       html += "<thead><tr><th>Data</th></tr></thead>";
-      html += "<tbody>";
-      html += `<tr><td><pre>${safeText(
+      html += `<tbody><tr><td><pre>${safeText(
         JSON.stringify(resultData, null, 2)
-      )}</pre></td></tr>`;
-      html += "</tbody>";
+      )}</pre></td></tr></tbody>`;
   }
 
-  html += '</table></div></div>';
+  html += "</table></div></div>";
+
   if (total_results) {
     html += `<div class="agent-response-footer">Total: ${total_results} result(s)</div>`;
   }
-  html += '</div>';
+
+  html += "</div>";
   return html;
 }
 
 function copyTableToClipboard(button) {
   try {
     console.log('Copy button clicked, button:', button);
-    
+
     // Find the table - it's in the next sibling's child
     const tableWrapper = button.nextElementSibling;
     console.log('Table wrapper:', tableWrapper);
-    
+
     if (!tableWrapper) {
       console.error('Table wrapper not found');
       alert('Error: Could not find table wrapper');
       return;
     }
-    
+
     const table = tableWrapper.querySelector('table');
     console.log('Table found:', table);
-    
+
     if (!table) {
       console.error('Table not found inside wrapper');
       alert('Error: Could not find table element');
       return;
     }
-    
+
     let csv = '';
 
     // Get headers
     const headers = table.querySelectorAll('thead th');
     console.log('Headers found:', headers.length);
-    
+
     if (headers.length === 0) {
       alert('Error: No table headers found');
       return;
     }
-    
+
     const headerRow = Array.from(headers).map(th => {
       const text = th.textContent.trim();
       // Escape quotes and wrap in quotes if contains comma
@@ -337,7 +376,7 @@ function copyTableToClipboard(button) {
     // Get data rows
     const rows = table.querySelectorAll('tbody tr');
     console.log('Data rows found:', rows.length);
-    
+
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
       const rowData = Array.from(cells).map(td => {
@@ -396,14 +435,14 @@ function copyWithFallback(text, successCallback) {
     textarea.style.opacity = '0';
     textarea.style.left = '-999999px';
     document.body.appendChild(textarea);
-    
+
     // Select and copy
     textarea.select();
     textarea.setSelectionRange(0, text.length);
-    
+
     const successful = document.execCommand('copy');
     document.body.removeChild(textarea);
-    
+
     if (successful) {
       successCallback();
     } else {
@@ -427,11 +466,17 @@ document.addEventListener('DOMContentLoaded', function () {
 // ========== OVERVIEW ==========
 
 async function getBridgeCount() {
+  const result = $('countResult');
+  if (!result) return;
+
+  if (result.innerHTML.trim() !== '') {
+    result.innerHTML = '';
+    return;
+  }
+
   try {
     const resp = await fetch('/api/bridges/count');
     const data = await resp.json();
-    const result = $('countResult');
-    if (!result) return;
     result.innerHTML = `
       <div class="stat-box">
         <div class="stat-number">${safeText(data.total_bridges)}</div>
@@ -443,11 +488,39 @@ async function getBridgeCount() {
   }
 }
 
+async function loadExamples() {
+  try {
+    const response = await fetch("/api/agent/examples");
+    const data = await response.json();
+
+    const container = document.getElementById("exampleQueries");
+    container.innerHTML = ""; // Clear loading message
+
+    data.examples.forEach((example) => {
+      const span = document.createElement("span");
+      span.className = "example-query";
+      span.textContent = example;
+      span.onclick = () => setQuery(example);
+      container.appendChild(span);
+    });
+  } catch (error) {
+    console.error("Failed to load examples:", error);
+    document.getElementById("exampleQueries").innerHTML =
+      '<span class="error">Failed to load examples</span>';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadExamples);
+
 // ========== SEARCH ==========
 
 let lastSearchResults = [];
 
-async function searchBridges() {
+// Add at the top of the file with other global variables
+let currentPage = 1;
+let currentSearchParams = null;
+
+async function searchBridges(page = 1) {
   const params = new URLSearchParams();
   const bin = $('searchBin')?.value?.trim();
   const county = $('searchCounty')?.value?.trim();
@@ -462,6 +535,14 @@ async function searchBridges() {
   if (crossed) params.append('crossed', crossed);
   if (minSpans) params.append('min_spans', minSpans);
   if (maxSpans) params.append('max_spans', maxSpans);
+
+  // Add pagination
+  params.append('page', page);
+  params.append('page_size', 50);
+
+  // Store current search params for pagination
+  currentSearchParams = params.toString().replace(/&?page=\d+/, '');
+  currentPage = page;
 
   showInfo('searchResult', 'Searching...');
   const resultsContainer = $('bridgeListOnMap');
@@ -482,26 +563,15 @@ async function searchBridges() {
       return;
     }
 
-    showSuccess('searchResult', `Found ${safeText(data.count)} bridge(s).`);
-    renderBridgeTable(lastSearchResults);
+    const pageInfo = `Page ${data.page} of ${data.total_pages} (${data.total_count} total bridges)`;
+    showSuccess('searchResult', pageInfo);
+    renderBridgeTable(lastSearchResults, data);
   } catch (e) {
     showError('searchResult', e.message || e);
   }
 }
 
-function clearSearch() {
-  if ($('searchBin')) $('searchBin').value = '';
-  if ($('searchCounty')) $('searchCounty').value = '';
-  if ($('searchCarried')) $('searchCarried').value = '';
-  if ($('searchCrossed')) $('searchCrossed').value = '';
-  if ($('searchMinSpans')) $('searchMinSpans').value = '';
-  if ($('searchMaxSpans')) $('searchMaxSpans').value = '';
-  if ($('searchResult')) $('searchResult').innerHTML = '';
-  if ($('bridgeListOnMap')) $('bridgeListOnMap').innerHTML = '';
-  lastSearchResults = [];
-}
-
-function renderBridgeTable(bridges) {
+function renderBridgeTable(bridges, paginationData) {
   const container = $('bridgeListOnMap');
   if (!container) return;
   if (!bridges || bridges.length === 0) {
@@ -509,23 +579,36 @@ function renderBridgeTable(bridges) {
     return;
   }
 
-  const maxRows = 200;
-  const rows = bridges.slice(0, maxRows);
-
   let html = `<div class="results">
-    <div style="margin-bottom: 10px;"><strong>Showing ${rows.length}</strong> of ${bridges.length}</div>
+    <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <strong>Showing ${bridges.length} bridges</strong>`;
+
+  // Add pagination controls
+  if (paginationData && paginationData.total_pages > 1) {
+    html += `<div class="pagination-controls">
+      <button onclick="searchBridges(${paginationData.page - 1})"
+              ${paginationData.page <= 1 ? 'disabled' : ''}
+              class="page-btn">← Previous</button>
+      <span style="margin: 0 15px;">Page ${paginationData.page} of ${paginationData.total_pages}</span>
+      <button onclick="searchBridges(${paginationData.page + 1})"
+              ${paginationData.page >= paginationData.total_pages ? 'disabled' : ''}
+              class="page-btn">Next →</button>
+    </div>`;
+  }
+
+  html += `</div>
     <table>
       <tr>
         <th>BIN</th><th>County</th><th>Carries</th><th>Crosses</th><th>Spans</th><th>Location</th><th>Map</th>
       </tr>`;
 
-  for (const b of rows) {
+  for (const b of bridges) {
     const lat = b.latitude || '';
     const lng = b.longitude || '';
-    const mapsLink = lat && lng 
+    const mapsLink = lat && lng
       ? `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" class="maps-link">📍 View</a>`
       : 'N/A';
-    
+
     html += `<tr>
       <td>${safeText(b.bin)}</td>
       <td>${safeText(b.county)}</td>
@@ -539,6 +622,18 @@ function renderBridgeTable(bridges) {
 
   html += `</table></div>`;
   container.innerHTML = html;
+}
+
+function clearSearch() {
+  if ($('searchBin')) $('searchBin').value = '';
+  if ($('searchCounty')) $('searchCounty').value = '';
+  if ($('searchCarried')) $('searchCarried').value = '';
+  if ($('searchCrossed')) $('searchCrossed').value = '';
+  if ($('searchMinSpans')) $('searchMinSpans').value = '';
+  if ($('searchMaxSpans')) $('searchMaxSpans').value = '';
+  if ($('searchResult')) $('searchResult').innerHTML = '';
+  if ($('bridgeListOnMap')) $('bridgeListOnMap').innerHTML = '';
+  lastSearchResults = [];
 }
 
 // ========== STATS ==========
@@ -815,7 +910,7 @@ async function deleteByBridge() {
 }
 
 async function deleteAllInspections() {
-  if (!confirm('Delete ALL inspections? This cannot be undone.')) return;
+  if (!confirm('Delete ALL inspections?')) return;
   try {
     const resp = await fetch('/api/inspections/delete-all', { method: 'DELETE' });
     const data = await resp.json();
