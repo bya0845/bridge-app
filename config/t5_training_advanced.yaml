@@ -1,0 +1,73 @@
+# Advanced T5 Training Configuration
+# For longer training with better convergence and distributed GPU support
+
+# ============ MODEL ============
+model_name: "t5-base"  # Larger model for better performance
+
+# ============ DATA ============
+dataset: "bridge_query"
+data_path: "src/data/training_data.json"
+val_split: 0.15  # 85/15 split for larger training set
+max_source_length: 128
+max_target_length: 64
+seed: 42
+
+# ============ TRAINING ============
+epochs: 20  # More epochs for convergence
+batch_size: 16  # Larger batch (adjust based on GPU memory)
+learning_rate: 3e-5  # Lower LR for stability
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+# Optimizer
+optimizer: "adamw"
+beta1: 0.9
+beta2: 0.999
+eps: 0.00000001  # 1e-8
+
+# Scheduler
+scheduler: "cosine"  # Cosine decay with warmup
+warmup_steps: 500  # More warmup for stability
+
+# ============ EVALUATION ============
+eval_steps: 100
+metric_for_best_model: "exact_match"
+
+# ============ SAVING ============
+output_dir: "./results_advanced"
+save_best: true
+save_steps: 200
+save_total_limit: 5  # Keep more checkpoints
+load_best_model_at_end: true
+
+# ============ DISTRIBUTED TRAINING ============
+mixed_precision: "fp16"  # Enable FP16 for faster training
+gradient_accumulation_steps: 2  # Effective batch = 16 * 2 = 32
+num_workers: 4  # More workers for faster data loading
+
+# ============ MLFLOW ============
+mlflow: true
+mlflow_tracking_uri: "./mlruns"
+experiment_name: "bridge_query_parser_advanced"
+run_name: null
+training_info: "Advanced T5-base training with FP16 and longer epochs"
+
+# ============ LOGGING ============
+log_interval: 20
+
+# ============ INFERENCE ============
+num_beams: 8  # More beams for better generation quality
+
+# ============ TEST QUERIES ============
+test_queries:
+  - "How many bridges are there?"
+  - "Show me bridges in Orange county"
+  - "Find bridges with more than 3 spans"
+  - "List bridges carrying highway 84i"
+  - "What are the bridge statistics by county?"
+  - "Show me the top 5 bridges by span count"
+  - "Orange county bridges carrying 84i with more than 4 spans"
+  - "Westchester bridges crossing river with at least 3 spans"
+  - "Bridges crossing saw mill river"
+  - "Find top 10 bridges by span count"
+

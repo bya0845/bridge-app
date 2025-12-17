@@ -1,0 +1,73 @@
+# T5 Training Configuration for Bridge Query Parser
+# Natural language to API endpoint translation
+
+# ============ MODEL ============
+model_name: "t5-small"  # or t5-base, t5-large, google/flan-t5-small, etc.
+
+# ============ DATA ============
+dataset: "bridge_query"
+data_path: "src/data/training_data.json"
+val_split: 0.2  # 80/20 train/val split
+max_source_length: 128  # Max tokens for input
+max_target_length: 64   # Max tokens for output
+seed: 42
+
+# ============ TRAINING ============
+epochs: 10
+batch_size: 8
+learning_rate: 5e-5
+weight_decay: 0.01
+max_grad_norm: 1.0
+
+# Optimizer
+optimizer: "adamw"  # adamw, adam, sgd
+beta1: 0.9
+beta2: 0.999
+eps: 0.00000001  # 1e-8
+
+# Scheduler
+scheduler: "linear"  # linear, cosine, cosine_annealing, step, none
+warmup_steps: 200
+
+# ============ EVALUATION ============
+eval_steps: 50
+metric_for_best_model: "accuracy"  # accuracy, exact_match, loss
+
+# ============ SAVING ============
+output_dir: "./results"
+save_best: true
+save_steps: 100
+save_total_limit: 3
+load_best_model_at_end: true
+
+# ============ DISTRIBUTED TRAINING ============
+mixed_precision: "no"  # no, fp16, bf16
+gradient_accumulation_steps: 1
+num_workers: 0  # DataLoader workers (0 = main process only)
+
+# ============ MLFLOW ============
+mlflow: true
+mlflow_tracking_uri: "./mlruns"
+experiment_name: "bridge_query_parser"
+run_name: null  # Auto-generated if null
+training_info: "T5 model for natural language to API endpoint translation"
+
+# ============ LOGGING ============
+log_interval: 10  # Log every N batches
+
+# ============ INFERENCE ============
+num_beams: 4  # Beam search for generation
+
+# ============ TEST QUERIES (for testing mode) ============
+test_queries:
+  - "How many bridges are there?"
+  - "Show me bridges in Orange county"
+  - "Find bridges with more than 3 spans"
+  - "List bridges carrying highway 84i"
+  - "What are the bridge statistics by county?"
+  - "Show me the top 5 bridges by span count"
+  - "Orange county bridges carrying 84i with more than 4 spans"
+  - "Westchester bridges crossing river with at least 3 spans"
+  - "Bridges crossing saw mill river"
+  - "Find top 10 bridges by span count"
+

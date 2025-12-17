@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bridge Inspector</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+      // Configure marked.js to properly render images and links
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+        sanitize: false
+      });
+    </script>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h1>New York State Region 8 Bridge App</h1>
+      <ul>
+        <li>
+          <button class="menu-btn active" onclick="showPage('overview')">
+            Overview
+          </button>
+        </li>
+        <li>
+          <button class="menu-btn" onclick="showPage('statistics')">
+            Statistics
+          </button>
+        </li>
+        <li>
+          <button class="menu-btn" onclick="showPage('ai-assistant')">
+            AI Assistant
+          </button>
+        </li>
+        <li>
+          <button class="menu-btn" onclick="showPage('search')">
+            Search Bridges
+          </button>
+        </li>
+        <li>
+          <button class="menu-btn" onclick="showPage('inspections')">
+            Log Inspection
+          </button>
+        </li>
+        <li>
+          <button class="menu-btn" onclick="showPage('manage-inspections')">
+            Manage Inspections
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <!-- Overview Page -->
+      <div id="overview" class="page active">
+        <h2>New York State Region 8 Bridge Inspection Application</h2>
+
+        <div class="intro-section">
+          <h3 style="color: #003A70; margin-top: 0">About This Application</h3>
+          <p>
+            Comprehensive bridge data and inspection management for <strong>New York State Region 8</strong>, 
+            covering 7 counties: Columbia, Dutchess, Orange, Putnam, Rockland, Ulster, and Westchester.
+          </p>
+          <button class="search-btn" onclick="getBridgeCount()" style="width: auto; margin-top: 15px">
+            Get Total Bridge Count
+          </button>
+          <div id="countResult" style="margin-top: 15px"></div>
+        </div>
+
+        <div class="intro-section">
+          <h3 style="color: #003A70; margin-top: 0">Key Features</h3>
+          <ul style="margin-left: 20px; margin-top: 10px; line-height: 2">
+            <li><strong>AI Assistant:</strong> Ask questions in plain English and get intelligent answers</li>
+            <li><strong>Advanced Search:</strong> Find bridges by ID, county, features carried/crossed, and span count</li>
+            <li><strong>Statistics:</strong> Analyze bridge distribution by county and structural characteristics</li>
+            <li><strong>Map Integration:</strong> View bridge locations on Google Maps</li>
+            <li><strong>Inspection Logging:</strong> Record and manage bridge inspection data</li>
+          </ul>
+        </div>
+
+        <div class="intro-section" style="background: linear-gradient(135deg, #003A70 0%, #002855 100%); color: white; border: none;">
+          <h3 style="color: #FFB81C; margin-top: 0">Getting Started</h3>
+          <p style="color: white;">
+            Try the <strong>AI Assistant</strong> for natural language queries, use <strong>Search Bridges</strong> 
+            to explore the database, or view <strong>Statistics</strong> for regional analysis.
+          </p>
+        </div>
+      </div>
+
+      <!-- AI Assistant Page -->
+      <div id="ai-assistant" class="page">
+        <div class="agent-section">
+          <h2 class="agent-title">AI Assistant</h2>
+
+          <div class="status-line">
+            <span id="statusText">Checking agent status...</span>
+          </div>
+
+          <input type="text" id="agentQuery" placeholder="Ask a question about bridges..." />
+          <button onclick="queryAgent()" id="queryButton">Ask</button>
+
+          <div id="agentResult"></div>
+        </div>
+
+        <div class="examples-container">
+          <div class="examples-title">Example Questions</div>
+          <div class="example-queries" id="exampleQueries">
+            <span class="example-query" onclick="setQuery('How many bridges are there?')">How many bridges are there?</span>
+            <span class="example-query" onclick="setQuery('Show statistics by county')">Show statistics by county</span>
+            <span class="example-query" onclick="setQuery('Show statistics by span count')">Show statistics by span count</span>
+            <span class="example-query" onclick="setQuery('Show me bridges')">Show me bridges</span>
+            <span class="example-query" onclick="setQuery('Bridges in Orange county')">Bridges in Orange county</span>
+            <span class="example-query" onclick="setQuery('Bridges in Westchester')">Bridges in Westchester</span>
+            <span class="example-query" onclick="setQuery('Bridges with 5 spans')">Bridges with 5 spans</span>
+            <span class="example-query" onclick="setQuery('Bridges with more than 3 spans')">Bridges with more than 3 spans</span>
+            <span class="example-query" onclick="setQuery('Orange county bridges with more than 2 spans')">Orange county bridges with more than 2 spans</span>
+            <span class="example-query" onclick="setQuery('Westchester bridges with at least 4 spans')">Westchester bridges with at least 4 spans</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inspection Logging Page -->
+      <div id="inspections" class="page">
+        <h2>Log Bridge Inspection</h2>
+
+        <div class="form-container">
+          <div class="form-group">
+            <label>Bridge ID (BIN) *</label>
+            <input type="text" id="inspectionBin" placeholder="e.g., 1000040" />
+          </div>
+
+          <div class="form-group">
+            <label>Inspection Date *</label>
+            <input type="date" id="inspectionDate" />
+          </div>
+
+          <div class="form-group">
+            <label>Inspection Time *</label>
+            <input type="time" id="inspectionTime" />
+          </div>
+
+          <div class="form-group">
+            <label>Weather Conditions</label>
+            <select id="inspectionWeather">
+              <option value="">Select weather...</option>
+              <option value="Clear">Clear</option>
+              <option value="Cloudy">Cloudy</option>
+              <option value="Rainy">Rainy</option>
+              <option value="Snowy">Snowy</option>
+              <option value="Foggy">Foggy</option>
+              <option value="Windy">Windy</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Inspection Notes (Markdown supported)</label>
+            <div class="markdown-editor">
+              <div class="markdown-editor-left">
+                <label style="font-size: 12px; color: #666; font-weight: normal; margin-bottom: 5px;">Raw Markdown</label>
+                <textarea id="inspectionNotes" placeholder="Add detailed notes using Markdown..." oninput="previewMarkdown()" ondrop="handleMarkdownDrop(event)" ondragover="handleMarkdownDragOver(event)"></textarea>
+              </div>
+              <div class="markdown-editor-right">
+                <label style="font-size: 12px; color: #666; font-weight: normal; margin-bottom: 5px;">Preview</label>
+                <div id="markdownPreview" class="markdown-content markdown-preview"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Inspection Photos</label>
+            <div class="photo-upload-section">
+              <div class="photo-drop-zone" id="photoDropZone" ondrop="handlePhotoDrop(event)" ondragover="handlePhotoDragOver(event)" ondragleave="handlePhotoDragLeave(event)" onclick="document.getElementById('photoFileInput').click()">
+                <div class="photo-drop-zone-content">
+                  <span class="photo-icon">📷</span>
+                  <p>Drag & drop photos here or click to browse</p>
+                  <p class="photo-hint">Images will be uploaded locally</p>
+                </div>
+              </div>
+              <input type="file" id="photoFileInput" accept="image/*" multiple style="display: none;" onchange="handlePhotoFileSelect(event)" />
+              <div id="photoGallery" class="photo-gallery"></div>
+            </div>
+          </div>
+
+          <button class="search-btn" onclick="logInspection()">Log Inspection</button>
+          <div id="inspectionResult"></div>
+        </div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">View Inspection History</h3>
+        <div class="form-container">
+          <div class="form-group">
+            <label>Bridge ID (BIN)</label>
+            <input type="text" id="viewHistoryBin" placeholder="e.g., 1000040" />
+          </div>
+          <button class="search-btn" onclick="getInspectionHistory()" style="width: auto;">View History</button>
+          <div id="inspectionHistory"></div>
+        </div>
+      </div>
+
+      <!-- Manage Inspections Page -->
+      <div id="manage-inspections" class="page">
+        <h2>Manage Inspection Logs</h2>
+
+        <div class="form-container">
+          <h3 style="color: #1abc9c; margin-top: 0;">View Inspection Logs by Bridge</h3>
+
+          <!-- Filter Options -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>From Date</label>
+              <input type="date" id="filterFromDate" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>To Date</label>
+              <input type="date" id="filterToDate" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Limit Results</label>
+              <input type="number" id="filterLimit" placeholder="e.g., 50" min="1" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="search-btn" onclick="loadBridgesList()" style="width: auto; flex: 1; min-width: 150px;">Load / Filter</button>
+            <button class="search-btn" onclick="clearInspectionFilters()" style="width: auto; flex: 0 0 auto; background: #7f8c8d;">Clear Filters</button>
+          </div>
+
+          <div id="bridgesListResult"></div>
+        </div>
+
+        <div class="form-container">
+          <h3 style="color: #d32f2f; margin-top: 0;">⚠️ Delete Inspections by Bridge</h3>
+          <p style="color: #666; margin-bottom: 15px;">This will permanently delete all inspection records for the specified bridge.</p>
+          <div class="form-group">
+            <label>Bridge ID (BIN)</label>
+            <input type="text" id="deleteByBridgeBin" placeholder="e.g., 1000040" />
+          </div>
+          <button class="search-btn delete-btn" onclick="deleteByBridge()">Delete Bridge Inspections</button>
+          <div id="deleteByBridgeResult"></div>
+        </div>
+
+        <div class="form-container danger-zone">
+          <h3 style="color: #d32f2f; margin-top: 0;">🗑️ Delete All Inspections</h3>
+          <p style="color: #d32f2f; font-weight: bold; margin-bottom: 15px;">
+            ⚠️ WARNING: This will permanently delete ALL inspection records. This action cannot be undone.
+          </p>
+          <button class="search-btn delete-btn" onclick="deleteAllInspections()" style="width: auto;">Delete ALL Inspections</button>
+          <div id="deleteAllResult"></div>
+        </div>
+      </div>
+
+      <!-- Search Page -->
+      <div id="search" class="page">
+        <h2>Search Bridges</h2>
+
+        <div class="search-page-container">
+          <!-- Search Controls Section (Left) -->
+          <div class="search-controls-section">
+            <h3 style="color: #1abc9c; margin-top: 0; margin-bottom: 15px;">🔍 Search Filters</h3>
+
+            <div class="search-form-stack">
+              <div class="form-group">
+                <label>Bridge ID (BIN)</label>
+                <input type="text" id="searchBin" placeholder="e.g., 1000040" />
+              </div>
+
+              <div class="form-group">
+                <label>County</label>
+                <select id="searchCounty">
+                  <option value="">All counties</option>
+                  <option value="Columbia">Columbia</option>
+                  <option value="Dutchess">Dutchess</option>
+                  <option value="Orange">Orange</option>
+                  <option value="Putnam">Putnam</option>
+                  <option value="Rockland">Rockland</option>
+                  <option value="Ulster">Ulster</option>
+                  <option value="Westchester">Westchester</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Feature Carried</label>
+                <input type="text" id="searchCarried" placeholder="e.g., I-87, Main St" />
+              </div>
+
+              <div class="form-group">
+                <label>Feature Crossed</label>
+                <input type="text" id="searchCrossed" placeholder="e.g., HUDSON RIVER" />
+              </div>
+
+              <div class="form-group">
+                <label>Min Spans</label>
+                <input type="number" id="searchMinSpans" placeholder="1" min="1" />
+              </div>
+
+              <div class="form-group">
+                <label>Max Spans</label>
+                <input type="number" id="searchMaxSpans" placeholder="10" min="1" />
+              </div>
+            </div>
+
+            <div class="search-buttons">
+              <button class="search-btn" onclick="searchBridges()">🔍 Search</button>
+              <button class="search-btn" onclick="clearSearch()" style="background: #7f8c8d;">Clear</button>
+            </div>
+
+            <div id="searchResult" style="margin-top: 12px;"></div>
+          </div>
+
+          <!-- Map removed (no Azure) -->
+        </div>
+
+        <!-- Results Section -->
+        <div id="bridgeListOnMap" style="margin-top: 20px;">
+          <!-- Pagination controls and results will be inserted here -->
+        </div>
+      </div>
+
+      <!-- Statistics Page -->
+      <div id="statistics" class="page">
+        <h2>Statistics</h2>
+
+        <h3 style="margin-top: 20px; margin-bottom: 15px">Bridges by County</h3>
+        <button class="search-btn" onclick="getCountyStats()" style="width: auto">
+          Get County Statistics
+        </button>
+        <div id="countyStatsResult"></div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px">Bridges by Span Count</h3>
+        <button class="search-btn" onclick="getSpanStats()" style="width: auto">
+          Get Span Statistics
+        </button>
+        <div id="spanStatsResult"></div>
+      </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>
