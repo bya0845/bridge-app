@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/bridge_app.egg-info/PKG-INFO
+src/bridge_app.egg-info/SOURCES.txt
+src/bridge_app.egg-info/dependency_links.txt
+src/bridge_app.egg-info/top_level.txt
+src/parser/__init__.py
+src/parser/extract_features.py
+src/parser/extracted_features.py
+src/parser/generate_training_set.py
+src/parser/helpers.py
+src/parser/inference.py
+src/parser/train_model.py
+test/test_local_app.py
+test/test_params.py
+test/test_queries.py

@@ -1,0 +1,6 @@
+data
+fine_tuned_model
+parser
+results
+static
+templates
