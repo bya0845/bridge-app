@@ -6,6 +6,8 @@ A Flask-based web application for managing bridge inspections with an AI-powered
 
 - [Bridge Inspection Management Application](https://sdcc-bridge-app-fbbbeuamd2cycsdq.westus2-01.azurewebsites.net/)
 
+$env:Path += ";C:\Users\Bo\.fly\bin"
+
 ## Table of Contents
 
 - [Features](#features)
@@ -386,7 +388,7 @@ parser = BridgeQueryParser(model_path)
 def agent_query():
     data = request.get_json()
     query = data.get('query', '').strip()
-    
+
     # Parse with trained model
     endpoint = parser.parse_query(query)
     # ... handle response
@@ -499,15 +501,15 @@ class MySolver(BaseSolver):
     def _load_model(self):
         # Load your model
         pass
-    
+
     def _load_dataset(self) -> Tuple[DataLoader, DataLoader]:
         # Create dataloaders
         pass
-    
+
     def _train_step(self, epoch: int) -> Dict[str, float]:
         # Training loop
         pass
-    
+
     def _evaluate(self, epoch: int) -> Dict[str, float]:
         # Validation loop
         pass

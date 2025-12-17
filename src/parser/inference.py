@@ -75,8 +75,42 @@ class BridgeQueryParser:
         """Load the tokenizer."""
         try:
             logger.info(f"Loading tokenizer for {self.model_name}")
+
+            # Try to import sentencepiece to give a more specific error
+            try:
+                import sentencepiece
+
+                logger.debug(f"SentencePiece version: {sentencepiece.__version__}")
+            except ImportError as e:
+                logger.error("SentencePiece library not installed!")
+                logger.error("Install with: pip install sentencepiece")
+                raise
+
             self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=False)
             logger.info("Tokenizer loaded successfully")
+
+        except ImportError as e:
+            # More specific error message for missing dependencies
+            error_msg = str(e)
+            if "SentencePiece" in error_msg:
+                logger.error(
+                    """
+                SentencePiece library is required for T5Tokenizer but not found.
+                To install:
+
+                For pip:
+                    pip install sentencepiece
+
+                For conda:
+                    conda install -c conda-forge sentencepiece
+
+                For system packages (Ubuntu/Debian):
+                    apt-get install libsentencepiece-dev
+
+                After installation, you may need to restart your Python environment.
+                """
+                )
+            raise ValueError(f"Could not load tokenizer: {e}")
         except Exception as e:
             logger.error(f"Failed to load tokenizer: {e}")
             raise ValueError(f"Could not load tokenizer: {e}")
