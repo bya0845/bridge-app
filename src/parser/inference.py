@@ -55,7 +55,7 @@ class BridgeQueryParser:
         logger.info(f"Using device: {self.device}")
 
         # Load model and tokenizer
-        self._load_model()
+        self._load_model(model_path)
         self._load_tokenizer()
 
     def _load_model(self, model_path):
