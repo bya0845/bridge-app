@@ -9,7 +9,8 @@ import logging
 import torch
 from pathlib import Path
 from typing import Optional
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class BridgeQueryParser:
 
         Args:
             model_path: Path to trained model checkpoint (.pth file)
-            model_name: Base model name (for tokenizer)
+            model_name: Base model name (for tokenizer fallback)
             max_input_length: Maximum input sequence length
             max_output_length: Maximum output sequence length
             num_beams: Number of beams for beam search
@@ -42,45 +43,72 @@ class BridgeQueryParser:
 
         if not model_path:
             raise ValueError("model_path is required and cannot be None")
-        try:
-            self.model_path = Path(model_path)
-            if not self.model_path.exists():
-                raise FileNotFoundError(f"Model checkpoint not found: {self.model_path}")
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Invalid model_path '{model_path}': {e}") from e
+
+        # 1. Check for local base model to avoid 250MB download
+        # Looks for 't5_base' folder in the same directory as this script
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        local_base_path = os.path.join(current_dir, "t5_base")
+
+        if os.path.exists(local_base_path):
+            logger.info(f"Found local base model config at: {local_base_path}")
+            model_source = local_base_path
+        else:
+            logger.warning(
+                f"Local base model not found at {local_base_path}. Defaulting to '{model_name}' (Internet Download)."
+            )
+            model_source = model_name
 
         self.model_name = model_name
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
         self.num_beams = num_beams
-        self._load_tokenizer()
 
-        logger.info(f"Loading base model {self.model_name}")
-        self.model = T5ForConditionalGeneration.from_pretrained(self.model_name)
+        # 2. Load Tokenizer & Config (Fast)
+        self._load_tokenizer(model_source)
+
+        # 3. Initialize empty model (Instant)
+        logger.info(f"Initializing model structure from {model_source}")
+        config = T5Config.from_pretrained(model_source)
+        self.model = T5ForConditionalGeneration(config)
+
+        # 4. Load Fine-Tuned Weights
         self._load_model(model_path)
         self.model.to(self.device)
         self.model.eval()
 
     def _load_model(self, model_path):
         """Load model weights"""
-        if model_path and Path(model_path).exists():
-            logger.info(f"Loading model from {model_path}")
-            state_dict = torch.load(model_path, map_location=self.device)
-            self.model.load_state_dict(state_dict)
+        try:
+            mp = Path(model_path)
+            if mp.exists():
+                logger.info(f"Loading fine-tuned weights from {model_path}")
+                state_dict = torch.load(model_path, map_location=self.device)
 
-            logger.info("Model loaded successfully")
-        else:
-            logger.info(f"No checkpoint found at {model_path}, using base model")
+                # Handle cases where state_dict might be nested
+                if "model_state_dict" in state_dict:
+                    state_dict = state_dict["model_state_dict"]
 
-    def _load_tokenizer(self):
+                self.model.load_state_dict(state_dict)
+                logger.info("Model weights loaded successfully")
+            else:
+                logger.warning(f"Checkpoint not found at {model_path}, using initialized base weights")
+        except Exception as e:
+            raise ValueError(f"Failed to load checkpoint '{model_path}': {e}") from e
+
+    def _load_tokenizer(self, model_source):
         """Load the T5 tokenizer."""
         try:
-            logger.info(f"Loading tokenizer for {self.model_name}")
-            self.tokenizer = T5Tokenizer.from_pretrained(self.model_name)
+            logger.info(f"Loading tokenizer from {model_source}")
+            self.tokenizer = T5Tokenizer.from_pretrained(model_source)
             logger.info("Tokenizer loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load tokenizer: {e}")
-            raise ValueError(f"Could not load tokenizer for {self.model_name}. " f"Error: {e}") from e
+            # Fallback to model_name if local load fails
+            if model_source != self.model_name:
+                logger.info(f"Retrying tokenizer load with {self.model_name}")
+                self.tokenizer = T5Tokenizer.from_pretrained(self.model_name)
+            else:
+                raise ValueError(f"Could not load tokenizer. Error: {e}") from e
 
     def parse_query(self, query: str) -> str:
         """
