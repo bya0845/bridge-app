@@ -1,10 +1,6 @@
 Flask>=3.0.0
-mysql-connector-python>=8.2.0
 python-dotenv>=1.0.1
-smolagents>=1.0.0
-litellm>=1.50.0
 gunicorn
-azure-storage-blob>=12.19.0
 torch>=2.0.0
 transformers>=4.30.0
 datasets>=2.14.0
@@ -20,5 +16,5 @@ pyyaml>=6.0
 # Development tools
 black>=24.0.0
 flake8>=7.0.0
-tensorboard>=2.15.0
 mlflow>=2.9.0
+requests==2.31.0
