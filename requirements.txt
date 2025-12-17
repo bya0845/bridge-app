@@ -6,7 +6,16 @@ gunicorn==23.0.0
 python-dotenv==1.0.0
 requests==2.31.0
 
+# Logging (missing!)
+colorama==0.4.6
+
 # Model inference (CPU-only)
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.1.0+cpu
 transformers==4.35.0
+
+# Pin NumPy to 1.x (important!)
+numpy<2.0.0
+
+# Optional but safe to include
+accelerate==0.24.0
