@@ -51,3 +51,5 @@ node_modules/
 # Temporary files
 *.tmp
 *.temp
+test/test_bridges.db
+src/data/bridge_data.csv

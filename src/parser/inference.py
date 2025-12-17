@@ -40,30 +40,36 @@ class BridgeQueryParser:
             num_beams: Number of beams for beam search
             device: Device to run on ('cuda', 'cpu', or None for auto)
         """
-        self.model_path = Path(model_path)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logger.info(f"Using device: {self.device}")
+
+        if not model_path:
+            raise ValueError("model_path is required and cannot be None")
+        try:
+            self.model_path = Path(model_path)
+            if not self.model_path.exists():
+                raise FileNotFoundError(f"Model checkpoint not found: {self.model_path}")
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Invalid model_path '{model_path}': {e}") from e
+
         self.model_name = model_name
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
         self.num_beams = num_beams
 
-        # Determine device
-        if device is None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        else:
-            self.device = torch.device(device)
-
-        logger.info(f"Using device: {self.device}")
-
         # Load model and tokenizer
-        self._load_model(model_path)
         self._load_tokenizer()
+
+        logger.info(f"Loading base model {self.model_name}")
+        self.model = T5ForConditionalGeneration.from_pretrained(self.model_name)
+        self._load_model(model_path)
+        self.model.to(self.device)
+        self.model.eval()
 
     def _load_model(self, model_path):
         """Load model weights"""
         if model_path and Path(model_path).exists():
             logger.info(f"Loading model from {model_path}")
-
-            # Load state dict (weights only)
             state_dict = torch.load(model_path, map_location=self.device)
             self.model.load_state_dict(state_dict)
 
@@ -72,57 +78,14 @@ class BridgeQueryParser:
             logger.info(f"No checkpoint found at {model_path}, using base model")
 
     def _load_tokenizer(self):
-        """Load the tokenizer."""
+        """Load the T5 tokenizer."""
         try:
             logger.info(f"Loading tokenizer for {self.model_name}")
-
-            # Try to import sentencepiece to give a more specific error
-            try:
-                import sentencepiece
-
-                logger.debug(f"SentencePiece version: {sentencepiece.__version__}")
-            except ImportError as e:
-                logger.error("SentencePiece library not installed!")
-                logger.error("Install with: pip install sentencepiece")
-                raise
-
-            # Try new behavior first, fall back to legacy if protobuf is missing
-            try:
-                self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=False)
-                logger.info("Tokenizer loaded successfully (legacy=False)")
-            except ImportError as proto_error:
-                if "protobuf" in str(proto_error).lower():
-                    logger.warning("Protobuf not available, falling back to legacy tokenizer mode")
-                    self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=True)
-                    logger.info("Tokenizer loaded successfully (legacy=True)")
-                else:
-                    raise
-
-        except ImportError as e:
-            # More specific error message for missing dependencies
-            error_msg = str(e)
-            if "SentencePiece" in error_msg:
-                logger.error(
-                    """
-                SentencePiece library is required for T5Tokenizer but not found.
-                To install:
-
-                For pip:
-                    pip install sentencepiece
-
-                For conda:
-                    conda install -c conda-forge sentencepiece
-
-                For system packages (Ubuntu/Debian):
-                    apt-get install libsentencepiece-dev
-
-                After installation, you may need to restart your Python environment.
-                """
-                )
-            raise ValueError(f"Could not load tokenizer: {e}")
+            self.tokenizer = T5Tokenizer.from_pretrained(self.model_name)
+            logger.info("Tokenizer loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load tokenizer: {e}")
-            raise ValueError(f"Could not load tokenizer: {e}")
+            raise ValueError(f"Could not load tokenizer for {self.model_name}. " f"Error: {e}") from e
 
     def parse_query(self, query: str) -> str:
         """
@@ -138,11 +101,9 @@ class BridgeQueryParser:
             logger.warning("Empty query provided")
             return ""
 
-        # Prepare input with task prefix
         input_text = f"translate to api: {query.strip()}"
 
         try:
-            # Tokenize
             inputs = self.tokenizer(
                 input_text,
                 return_tensors="pt",
@@ -151,7 +112,6 @@ class BridgeQueryParser:
                 padding=False,
             ).to(self.device)
 
-            # Generate
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
@@ -160,9 +120,7 @@ class BridgeQueryParser:
                     early_stopping=True,
                 )
 
-            # Decode
             result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
             logger.debug(f"Query: {query} -> Endpoint: {result}")
             return result.strip()
 
@@ -183,11 +141,9 @@ class BridgeQueryParser:
         if not queries:
             return []
 
-        # Prepare inputs
         input_texts = [f"translate to api: {q.strip()}" for q in queries]
 
         try:
-            # Tokenize batch
             inputs = self.tokenizer(
                 input_texts,
                 return_tensors="pt",
@@ -205,7 +161,6 @@ class BridgeQueryParser:
                     early_stopping=True,
                 )
 
-            # Decode all
             results = [self.tokenizer.decode(output, skip_special_tokens=True).strip() for output in outputs]
 
             return results
