@@ -23,8 +23,6 @@ build/
 mlruns/
 
 # Data files
-*.csv
-*.db
 *.sqlite
 *.sqlite3
 
