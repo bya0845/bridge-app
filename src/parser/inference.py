@@ -86,8 +86,17 @@ class BridgeQueryParser:
                 logger.error("Install with: pip install sentencepiece")
                 raise
 
-            self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=False)
-            logger.info("Tokenizer loaded successfully")
+            # Try new behavior first, fall back to legacy if protobuf is missing
+            try:
+                self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=False)
+                logger.info("Tokenizer loaded successfully (legacy=False)")
+            except ImportError as proto_error:
+                if "protobuf" in str(proto_error).lower():
+                    logger.warning("Protobuf not available, falling back to legacy tokenizer mode")
+                    self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, legacy=True)
+                    logger.info("Tokenizer loaded successfully (legacy=True)")
+                else:
+                    raise
 
         except ImportError as e:
             # More specific error message for missing dependencies
