@@ -3,8 +3,11 @@ python-dotenv==1.0.0
 requests==2.31.0
 gunicorn==23.0.0
 colorama==0.4.6
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
+numpy<2.0.0,>=1.24.0
+sentencepiece==0.2.0
+
+# PyTorch with CPU only
+torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
+
+# Transformers pinned to a version that works with torch 2.1.0
 transformers==4.35.0
-numpy<2.0.0
-sentencepiece>=0.2.0

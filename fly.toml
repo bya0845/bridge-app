@@ -1,7 +1,10 @@
 app = "bridge-app"
-primary_region = "ewr"  # Change to your preferred region
+primary_region = "ewr"
 
 [build]
+  # Empty build section tells Fly.io to use Dockerfile
+  # Or explicitly specify:
+  # dockerfile = "Dockerfile"
 
 [env]
   PORT = "8080"
@@ -18,7 +21,7 @@ primary_region = "ewr"  # Change to your preferred region
   processes = ["app"]
 
 [[vm]]
-  memory = '1gb'  # T5-small needs at least 1GB
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
 
