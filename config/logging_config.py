@@ -24,25 +24,37 @@ class ColoredFormatter(logging.Formatter):
 
 
 def configure_logger(log_level="INFO", logger=None):
-    """Configure logging with colors and fix duplicates."""
+    """Configure logging with colors and prevent duplicate logs."""
 
-    if logger is None:
+    # 1. Determine which logger we are configuring
+    # If no logger is passed, we are configuring the ROOT logger
+    is_root = logger is None
+    if is_root:
         logger = logging.getLogger()
 
+    # 2. Remove ANY existing handlers to prevent stacking
     if logger.handlers:
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
 
-    logging.getLogger("transformers").setLevel(logging.ERROR)
+    # 3. Suppress noisy external loggers (Transformers/Werkzeug)
+    if is_root:
+        logging.getLogger("transformers").setLevel(logging.ERROR)
+        logging.getLogger("werkzeug").handlers = []
+        logging.getLogger("werkzeug").propagate = True
 
-    werkzeug_logger = logging.getLogger("werkzeug")
-    werkzeug_logger.handlers = []
-    werkzeug_logger.propagate = True
-
+    # 4. Add the Custom Console Handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(ColoredFormatter())
-
     logger.addHandler(console_handler)
+
+    # 5. Set Level
     logger.setLevel(getattr(logging, log_level.upper()))
+
+    # 6. CRITICAL FIX: Stop propagation if this is NOT the root logger
+    # This prevents the "inference" logger from passing messages
+    # up to the "root" logger, avoiding the double print.
+    if not is_root:
+        logger.propagate = False
 
     return logger

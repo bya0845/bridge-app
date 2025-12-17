@@ -11,10 +11,7 @@ from pathlib import Path
 from typing import Optional
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
-from config.logging_config import configure_logger
-
 logger = logging.getLogger(__name__)
-configure_logger(log_level="INFO", logger=logger)
 
 
 class BridgeQueryParser:
