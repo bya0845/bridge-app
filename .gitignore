@@ -13,7 +13,7 @@ build/
 # VS Code
 .vscode/
 
-# Model checkpoints (IMPORTANT!)
+# Model checkpoints
 *.pt
 *.ckpt
 *.bin

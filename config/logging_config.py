@@ -6,7 +6,7 @@ init(autoreset=True)
 
 
 class ColoredFormatter(logging.Formatter):
-    """Custom formatter with colors for different log levels."""
+    """Custom formatter that colors the entire log message."""
 
     COLORS = {
         "DEBUG": Fore.CYAN,
@@ -18,21 +18,26 @@ class ColoredFormatter(logging.Formatter):
 
     def format(self, record):
         log_color = self.COLORS.get(record.levelname, "")
-        record.levelname = f"{log_color}{record.levelname}{Style.RESET_ALL}"
-        return f"{record.levelname}: {record.getMessage()}"
+        message = record.getMessage()
+        # Apply color to the entire string (Level + Message)
+        return f"{log_color}{record.levelname}: {message}{Style.RESET_ALL}"
 
 
 def configure_logger(log_level="INFO", logger=None):
-    """Configure logging with colors."""
-
-    # Suppress transformers warnings
-    logging.getLogger("transformers").setLevel(logging.ERROR)
+    """Configure logging with colors and fix duplicates."""
 
     if logger is None:
         logger = logging.getLogger()
 
-    for handler in logger.handlers[:]:
-        logger.removeHandler(handler)
+    if logger.handlers:
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+    logging.getLogger("transformers").setLevel(logging.ERROR)
+
+    werkzeug_logger = logging.getLogger("werkzeug")
+    werkzeug_logger.handlers = []
+    werkzeug_logger.propagate = True
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(ColoredFormatter())

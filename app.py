@@ -24,6 +24,7 @@ from config.logging_config import configure_logger
 
 configure_logger(log_level="INFO")
 logger = logging.getLogger(__name__)
+logger.propagate = False
 
 app = Flask(
     __name__,
