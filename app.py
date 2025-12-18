@@ -1,4 +1,3 @@
-#!./venv/bin/python3.13
 import sys
 import csv
 import os
@@ -397,13 +396,11 @@ def search_bridges():
         order = request.args.get("order", "asc")
         limit = request.args.get("limit", type=int)
 
-        # NEW: Pagination parameters
         page = request.args.get("page", 1, type=int)
-        page_size = request.args.get("page_size", 50, type=int)  # Default 50 per page
+        page_size = request.args.get("page_size", 50, type=int)  # 50 default results per page
 
-        # Ensure page is at least 1
         page = max(1, page)
-        page_size = min(max(10, page_size), 200)  # Between 10 and 200
+        page_size = min(max(10, page_size), 200)  # max 200 pages
 
         query = "SELECT * FROM bridges WHERE 1=1"
         params = []
@@ -456,32 +453,31 @@ def search_bridges():
         sort_order = VALID_ORDERS.get(order.lower(), "ASC")
         query += f" ORDER BY {sort_col} {sort_order}"
 
-        # NEW: Get total count before pagination
         count_query = query.replace("SELECT *", "SELECT COUNT(*)")
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(count_query, params)
-            total_count = cursor.fetchone()[0]
+            total_matches = cursor.fetchone()[0]
 
-        # NEW: Apply pagination (unless limit is specified for compatibility)
         if not limit:
+            response_total = total_matches
             offset = (page - 1) * page_size
             query += " LIMIT ? OFFSET ?"
             params.extend([page_size, offset])
         else:
+            response_total = min(total_matches, int(limit))
             query += " LIMIT ?"
             params.append(limit)
 
         bridges = execute_bridge_query(query, params)
 
-        # NEW: Return pagination metadata
         return jsonify(
             {
                 "count": len(bridges),
-                "total_count": total_count,
+                "total_count": response_total,
                 "page": page,
                 "page_size": page_size,
-                "total_pages": (total_count + page_size - 1) // page_size,
+                "total_pages": (response_total + page_size - 1) // page_size,
                 "results": bridges,
             }
         )

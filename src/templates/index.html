@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Bridge Inspector</title>
+    <title>Bridge App</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
@@ -72,11 +75,19 @@
               The source can be found here: https://github.com/bya0845/bridge-app <br><br>
 
               To get started, use
-              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">AI Search</span>
+              <a href="javascript:void(0);" onclick="showPage('ai-assistant')" style="text-decoration: none; cursor: pointer;">
+                  <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">AI Search</span>
+              </a>
               to query the database in natural language,
-              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Bridge Lookup</span>
+
+              <a href="javascript:void(0);" onclick="showPage('search')" style="text-decoration: none; cursor: pointer;">
+                  <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Bridge Lookup</span>
+              </a>
               to explore the database via traditional filters, or click on
-              <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">View Statistics</span>
+
+              <a href="javascript:void(0);" onclick="showPage('statistics')" style="text-decoration: none; cursor: pointer;">
+                  <span style="font-family: 'Montserrat', sans-serif; color: #003A70; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">View Statistics</span>
+              </a>
               to get bridge count and span stats by county.<br><br>
 
               The database includes bridges from the following counties:</strong>
@@ -99,7 +110,7 @@
           <h3 style="color: #003A70; margin-top: 0">Other App Features</h3>
           <ul style="margin-left: 20px; margin-top: 10px; line-height: 2">
             <li><strong>SQL Search:</strong> Find bridges by ID, county, features carried/crossed, and span count</li>
-            <li><strong>Map Integration (WIP):</strong> View bridge locations on Google Maps</li>
+            <li><strong>Map Integration:</strong> View bridge locations in browser with OpenStreeMaps or via Google Maps link</li>
           </ul>
         </div>
 
@@ -126,6 +137,7 @@
             <span class="loading-examples">Loading examples...</span>
           </div>
         </div>
+        <div id="ai-map-slot" style="width: 100%; height: 350px; margin-top: 30px; border-radius: 8px; overflow: hidden;"></div>
       </div>
 
       <!-- Inspection Logging Page -->
@@ -256,19 +268,18 @@
         </div>
       </div>
 
-      <!-- Search Page -->
-      <div id="search" class="page">
+<div id="search" class="page">
         <h2>Search Bridges</h2>
 
         <div class="search-page-container">
-          <!-- Search Controls Section (Left) -->
-          <div class="search-controls-section">
+
+          <div class="search-controls-section search-card">
             <h3 style="color: #1abc9c; margin-top: 0; margin-bottom: 15px;">Search Filters</h3>
 
             <div class="search-form-stack">
               <div class="form-group">
                 <label>Bridge ID (BIN)</label>
-                <input type="text" id="searchBin" placeholder="e.g., 1000040" />
+                <input type="text" id="searchBin" placeholder="e.g., 2224410" />
               </div>
 
               <div class="form-group">
@@ -292,17 +303,19 @@
 
               <div class="form-group">
                 <label>Feature Crossed</label>
-                <input type="text" id="searchCrossed" placeholder="e.g., HUDSON RIVER" />
+                <input type="text" id="searchCrossed" placeholder="e.g., ESOPUS CREEK" />
               </div>
 
-              <div class="form-group">
-                <label>Min Spans</label>
-                <input type="number" id="searchMinSpans" placeholder="1" min="1" />
-              </div>
+              <div class="form-group" style="display:flex; gap:10px;">
+                <div style="flex:1">
+                    <label>Min Spans</label>
+                    <input type="number" id="searchMinSpans" placeholder="1" min="1" style="width: 100%" />
+                </div>
 
-              <div class="form-group">
-                <label>Max Spans</label>
-                <input type="number" id="searchMaxSpans" placeholder="10" min="1" />
+                <div style="flex:1">
+                    <label>Max Spans</label>
+                    <input type="number" id="searchMaxSpans" placeholder="10" min="1" style="width: 100%" />
+                </div>
               </div>
             </div>
 
@@ -314,13 +327,17 @@
             <div id="searchResult" style="margin-top: 12px;"></div>
           </div>
 
-          <!-- Map removed (no Azure) -->
+          <div class="map-section search-card">
+             <h3 style="color: #1abc9c; margin-top: 0; margin-bottom: 15px;">Location Map</h3>
+
+             <div id="search-map-slot" style="width: 100%; height: 500px;">
+                  <div id="bridgeMap" style="width: 100%; height: 100%;"></div>
+              </div>
+          </div>
+
         </div>
 
-        <!-- Results Section -->
-        <div id="bridgeListOnMap" style="margin-top: 20px;">
-          <!-- Pagination controls and results will be inserted here -->
-        </div>
+        <div id="bridgeListOnMap" style="margin-top: 20px;"></div>
       </div>
 
       <!-- Statistics Page -->

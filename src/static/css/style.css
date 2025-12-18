@@ -581,7 +581,6 @@ tr:hover {
   text-decoration: underline;
 }
 
-/* Mobile Styles */
 /* Mobile Styles - Metro Transit Theme */
 @media (max-width: 768px) {
   body {
@@ -615,7 +614,13 @@ tr:hover {
     font-family: 'Montserrat', sans-serif; /* Metro Theme Font */
     padding: 12px 15px;
     font-size: 13px;
-    margin-bottom: 0;
+
+    width: 100% !important;
+    min-width: fit-content;
+    white-space: nowrap;
+    margin-bottom: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
 
     /* Square and Pronounced */
     border-radius: 0;
@@ -660,7 +665,7 @@ tr:hover {
 
   .sidebar li {
     flex: 1;
-    min-width: 120px; /* Slightly wider for the bolder font */
+    min-width: 180px;
   }
 
   .main {
@@ -847,9 +852,13 @@ tr:hover {
 }
 
 #bridgeMap {
-  width: 100%;
-  flex: 1;
-  display: none;
+    height: 500px !important;
+    width: 100% !important;
+    min-height: 400px;
+    background-color: #e0e0e0;
+    display: block;
+    position: relative;
+    z-index: 1;
 }
 
 .map-placeholder {
@@ -898,7 +907,8 @@ tr:hover {
 .search-page-container {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .search-controls-section {
@@ -956,136 +966,27 @@ tr:hover {
   flex-direction: column;
 }
 
-/* Azure Maps Popup Styles */
-.bridge-popup {
-  max-width: 280px;
-  padding: 0;
-}
+.search-card {
+    background: #fff;       /* White background */
+    padding: 20px;
+    border-radius: 8px;     /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
 
-.bridge-popup-header {
-  background: #003A70;
-  color: white;
-  padding: 12px 15px;
-  font-weight: bold;
-  font-size: 14px;
-  border-radius: 4px 4px 0 0;
-}
+    flex: 1;                /* Take up equal width */
+    min-width: 300px;       /* Don't get too skinny on mobile */
 
-.bridge-popup-content {
-  padding: 12px 15px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.bridge-popup-content .info-row {
-  margin-bottom: 6px;
-}
-
-.bridge-popup-content .info-label {
-  font-weight: bold;
-  color: #2d6a3e;
-}
-
-.bridge-popup-content .info-value {
-  color: #333;
-}
-
-.bridge-popup-content a {
-  color: #003A70;
-  text-decoration: none;
-}
-
-.bridge-popup-content a:hover {
-  text-decoration: underline;
-}
-
-/* Map Legend */
-.map-legend {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: white;
-  padding: 10px 15px;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  font-size: 12px;
-  z-index: 100;
-}
-
-.map-legend-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.map-legend-item:last-child {
-  margin-bottom: 0;
-}
-
-.map-legend-marker {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-/* Maps mobile styles */
-@media (max-width: 1024px) {
-  .map-search-container {
+    display: flex;          /* Allows children to expand */
     flex-direction: column;
-    height: auto;
-  }
-
-  .map-search-form {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .map-container {
-    height: 400px;
-  }
-
-  .search-page-container {
-    flex-direction: column;
-  }
-
-  .search-controls-section {
-    flex: 0 0 auto;
-    width: 100%;
-    max-height: none;
-  }
-
-  .search-map-section {
-    height: 400px;
-  }
 }
 
-@media (max-width: 480px) {
-  .map-container {
-    height: 300px;
-  }
-
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .form-group.half {
-    width: 100%;
-  }
-
-  .search-map-section {
-    height: 350px;
-  }
-
-  .search-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-buttons .search-btn {
-    width: 100%;
-    min-width: auto;
-  }
+/* Update the Map ID to fill the card */
+#bridgeMap {
+    flex-grow: 1;           /* Fill all available vertical space */
+    width: 100% !important;
+    min-height: 500px;      /* Ensure it's never too short */
+    background-color: #e0e0e0;
+    border-radius: 4px;     /* Slight rounding on the map itself */
+    z-index: 1;
 }
 
 /* ========== ROUTE PLANNER STYLES ========== */

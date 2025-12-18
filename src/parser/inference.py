@@ -4,15 +4,20 @@ Inference module for the trained T5 bridge query parser.
 This module loads a trained T5 model and provides a simple interface
 for translating natural language queries to API endpoints.
 """
-
+import os
 import logging
 import torch
 from pathlib import Path
 from typing import Optional
-from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
-import os
 
 logger = logging.getLogger(__name__)
+try:
+    import torch
+    from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    logger.warning("'transformers' or 'torch' not found. AI features will be disabled.")
 
 
 class BridgeQueryParser:
@@ -38,14 +43,18 @@ class BridgeQueryParser:
             num_beams: Number of beams for beam search
             device: Device to run on ('cuda', 'cpu', or None for auto)
         """
+
+        if not AI_AVAILABLE:
+            self.model = None
+            self.tokenizer = None
+            return
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Using device: {self.device}")
 
         if not model_path:
             raise ValueError("model_path is required and cannot be None")
 
-        # 1. Check for local base model to avoid 250MB download
-        # Looks for 't5_base' folder in the same directory as this script
         current_dir = os.path.dirname(os.path.abspath(__file__))
         local_base_path = os.path.join(current_dir, "t5_base")
 
@@ -62,16 +71,13 @@ class BridgeQueryParser:
         self.max_input_length = max_input_length
         self.max_output_length = max_output_length
         self.num_beams = num_beams
-
-        # 2. Load Tokenizer & Config (Fast)
         self._load_tokenizer(model_source)
 
-        # 3. Initialize empty model (Instant)
+
         logger.info(f"Initializing model structure from {model_source}")
         config = T5Config.from_pretrained(model_source)
         self.model = T5ForConditionalGeneration(config)
 
-        # 4. Load Fine-Tuned Weights
         self._load_model(model_path)
         self.model.to(self.device)
         self.model.eval()
@@ -120,6 +126,10 @@ class BridgeQueryParser:
         Returns:
             API endpoint string (e.g., "/api/bridges/search?county=Orange")
         """
+        if not AI_AVAILABLE or self.model is None:
+            logger.warning("AI query ignored: Transformers not installed or model failed to load.")
+            return ""
+
         if not query or not query.strip():
             logger.warning("Empty query provided")
             return ""

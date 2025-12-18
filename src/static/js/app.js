@@ -1,6 +1,4 @@
-/* Bridge Inspector frontend JS (no Azure / no maps)
- *
- * This file intentionally avoids any map SDK usage and only uses local Flask endpoints.
+/* Bridge app frontend JS
  */
 
 // ========== UTIL ==========
@@ -48,16 +46,43 @@ function showPage(pageName) {
   const buttons = document.querySelectorAll('.menu-btn');
   buttons.forEach((btn) => btn.classList.remove('active'));
 
-  const page = $(pageName);
+  const page = document.getElementById(pageName);
   if (page) page.classList.add('active');
 
   const evt = window.event;
-  if (evt && evt.target) evt.target.classList.add('active');
+  if (evt && evt.target && evt.target.classList.contains('menu-btn')) {
+      evt.target.classList.add('active');
+  }
+
+  // === MAP MOVING LOGIC ===
+  const mapElement = document.getElementById('bridgeMap');
 
   if (pageName === 'ai-assistant') {
-    checkAgentStatus();
-    const resultDiv = $('agentResult');
-    if (resultDiv) resultDiv.innerHTML = '';
+      const aiSlot = document.getElementById('ai-map-slot');
+      if (mapElement && aiSlot) {
+          aiSlot.appendChild(mapElement);
+      }
+
+      checkAgentStatus();
+      const resultDiv = document.getElementById('agentResult');
+      if (resultDiv) resultDiv.innerHTML = '';
+  }
+
+  else if (pageName === 'search') {
+      const searchSlot = document.getElementById('search-map-slot');
+      if (mapElement && searchSlot) {
+          searchSlot.appendChild(mapElement);
+      }
+  }
+
+  if ((pageName === 'ai-assistant' || pageName === 'search')) {
+      setTimeout(() => {
+          if (!mapInstance) {
+              if (typeof initMap === 'function') initMap();
+          } else {
+              mapInstance.invalidateSize();
+          }
+      }, 100);
   }
 }
 
@@ -536,11 +561,9 @@ async function searchBridges(page = 1) {
   if (minSpans) params.append('min_spans', minSpans);
   if (maxSpans) params.append('max_spans', maxSpans);
 
-  // Add pagination
   params.append('page', page);
   params.append('page_size', 50);
 
-  // Store current search params for pagination
   currentSearchParams = params.toString().replace(/&?page=\d+/, '');
   currentPage = page;
 
@@ -583,7 +606,6 @@ function renderBridgeTable(bridges, paginationData) {
     <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
       <strong>Showing ${bridges.length} bridges</strong>`;
 
-  // Add pagination controls
   if (paginationData && paginationData.total_pages > 1) {
     html += `<div class="pagination-controls">
       <button onclick="searchBridges(${paginationData.page - 1})"
@@ -603,11 +625,30 @@ function renderBridgeTable(bridges, paginationData) {
       </tr>`;
 
   for (const b of bridges) {
-    const lat = b.latitude || '';
-    const lng = b.longitude || '';
-    const mapsLink = lat && lng
-      ? `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" class="maps-link">📍 View</a>`
-      : 'N/A';
+    const lat = b.latitude;
+    const lng = b.longitude;
+
+    const safeBin = (b.bin || 'N/A').replace(/'/g, "\\'");
+    const safeCarried = (b.carried || 'N/A').replace(/'/g, "\\'");
+    const safeCrossed = (b.crossed || 'N/A').replace(/'/g, "\\'");
+
+    let mapActions = '<span style="color: #999;">N/A</span>';
+
+    if (lat && lng) {
+      const localBtn = `<button 
+           onclick="showOnMap(${lat}, ${lng}, '${safeBin}', '${safeCarried}', '${safeCrossed}')" 
+           title="Show on map above"
+           style="cursor: pointer; background: none; border: none; color: #1abc9c; font-weight: bold; margin-right: 8px; text-decoration: underline;">
+           Local Map Display
+         </button>`;
+
+      const googleUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      const googleLink = `<a href="${googleUrl}" target="_blank" title="Open in Google Maps" style="color: #3498db; text-decoration: none; font-size: 0.9em;">
+           Google Maps Display
+         </a>`;
+
+      mapActions = `${localBtn} ${googleLink}`;
+    }
 
     html += `<tr>
       <td>${safeText(b.bin)}</td>
@@ -615,8 +656,8 @@ function renderBridgeTable(bridges, paginationData) {
       <td>${safeText(b.carried)}</td>
       <td>${safeText(b.crossed)}</td>
       <td>${safeText(b.spans)}</td>
-      <td>${lat && lng ? `${lat}, ${lng}` : 'N/A'}</td>
-      <td>${mapsLink}</td>
+      <td style="font-size: 0.85em; color: #666;">${lat && lng ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : 'N/A'}</td>
+      <td>${mapActions}</td>
     </tr>`;
   }
 
@@ -676,6 +717,83 @@ async function getSpanStats() {
     showError('spanStatsResult', e.message || e);
   }
 }
+
+// ========== Map ==================
+
+let mapInstance = null;
+let currentMarker = null;
+
+function initMap() {
+    const mapContainer = document.getElementById('bridgeMap');
+    if (!mapContainer) {
+        console.warn("initMap: 'bridgeMap' container not found on this page.");
+        return;
+    }
+
+    if (mapInstance) {
+        console.log("initMap: Map already initialized.");
+        mapInstance.invalidateSize();
+        return;
+    }
+
+    try {
+        console.log("initMap: Initializing Leaflet map...");
+        mapInstance = L.map('bridgeMap', {
+            attributionControl: false
+        }).setView([41.2, -74.0], 9);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(mapInstance);
+
+        L.control.attribution({
+            prefix: false
+        }).addTo(mapInstance);
+
+    } catch (e) {
+        console.error("initMap Error:", e);
+    }
+}
+
+window.showOnMap = function(lat, lng, bin, carried, crossed) {
+    console.log(`showOnMap: BIN=${bin}`);
+
+    if (!mapInstance) initMap();
+    if (!mapInstance) return;
+    mapInstance.invalidateSize();
+
+    try {
+        mapInstance.setView([lat, lng], 17);
+
+        if (currentMarker) {
+            mapInstance.removeLayer(currentMarker);
+        }
+
+        // Create nice HTML content for the popup
+        const popupContent = `
+            <div style="font-size: 14px; line-height: 1.5;">
+                <strong>BIN:</strong> ${bin}<br>
+                <strong>Carries:</strong> ${carried}<br>
+                <strong style="color: #666;">Crosses:</strong> ${crossed}
+            </div>
+        `;
+
+        currentMarker = L.marker([lat, lng]).addTo(mapInstance)
+            .bindPopup(popupContent)
+            .openPopup();
+
+        // Scroll on mobile
+        if (window.innerWidth < 900) {
+            document.getElementById('bridgeMap').scrollIntoView({ behavior: 'smooth' });
+        }
+    } catch (e) {
+        console.error("showOnMap Error:", e);
+    }
+};
+
+// Initialize map immediately
+document.addEventListener('DOMContentLoaded', initMap);
 
 // ========== INSPECTIONS ==========
 

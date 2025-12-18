@@ -10,6 +10,8 @@ The "agent" underneath this NLP feature is the [Google T5-small](https://hugging
 
 The base T5 model was finetuned on a generated dataset of queries based on the spreadsheet data. The model has only 60 million parameters and was trained in a few minutes over 10 epochs on my RTX 4070. The total checkpoint size is roughly 250 MB and is deployed via Github LFS. The solver code was adapted from a neural network pruning project in my [Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) course, found here: https://github.com/bya0845/CS7643-DL-Project. All training code is in the [parser module](src/parser/). It includes the complete pipeline for preprocessing data, training, evaluating, and deploying this model. The solver also supports multi-GPU training via Hugging Face's Accelerate library, as well as experiment tracking via MLflow.
 
+All individal bridge search results can be displayed via Leaflet/OpenStreetMap.
+
 The main goal of the project is to demonstrate the use of a lightweight, open source, offline language model that can accomplish most NLP tasks without the need for enterprise foundation LLMs.
 
 ## Project Structure
@@ -48,8 +50,8 @@ bridge-app/
 
 ### Prerequisites
 
-* Python 3.8+
-* CUDA-capable GPU (optional, for faster training)
+* Python 3.9+
+* CUDA-capable GPU (optional)
 
 ### Setup
 
