@@ -6,10 +6,11 @@ This is a flask-based web application for managing bridge inspections and queryi
 
 The basis of this application is a spreadsheet of bridge data from my job as a structural/bridge inspection engineer. The spreadsheet was imported into an SQLite database via pandas, and the application's search and query features are built on top. The natural language search allows users to query the database with plain English questions to fetch data. A list of examples is provided on the AI search page.
 
-
 The "agent" underneath this NLP feature is the [Google T5-small](https://huggingface.co/google-t5/t5-small) model, which was one of the earliest text-to-text encoder/decoder transformers designed specifically for NLP tasks. More can be found here: [Exploring Transfer Learning with T5, the Text-to-Text Transformer](https://research.google/blog/exploring-transfer-learning-with-t5-the-text-to-text-transfer-transformer/).
 
-The base T5 model was finetuned on a generated dataset of queries based on the spreadsheet data. The model has only 60 million parameters and was trained in a few minutes over 10 epochs on my RTX 4070. The solver code was adapted from a project in my [Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) course. All code can be found in the [parser module](src/parser/).It includes the complete pipeline for preprocessing data, training, evaluating, and deploying this model. The solver also supports multi-GPU training via Hugging Face's Accelerate library, as well as experiment tracking via MLflow.
+The base T5 model was finetuned on a generated dataset of queries based on the spreadsheet data. The model has only 60 million parameters and was trained in a few minutes over 10 epochs on my RTX 4070. The total checkpoint size is roughly 250 MB and is deployed via Github LFS. The solver code was adapted from a neural network pruning project in my [Deep Learning](https://omscs.gatech.edu/cs-7643-deep-learning) course, found here: https://github.com/bya0845/CS7643-DL-Project. All training code is in the [parser module](src/parser/). It includes the complete pipeline for preprocessing data, training, evaluating, and deploying this model. The solver also supports multi-GPU training via Hugging Face's Accelerate library, as well as experiment tracking via MLflow.
+
+The main goal of the project is to demonstrate the use of a lightweight, open source, offline language model that can accomplish most NLP tasks without the need for enterprise foundation LLMs.
 
 ## Project Structure
 
