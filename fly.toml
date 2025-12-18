@@ -7,6 +7,7 @@ primary_region = "ewr"
   PORT = "8080"
   SQLITE_PATH = "./src/data/bridges.db"
   MODEL_CHECKPOINT_PATH = "results/checkpoints/t5-small_best.pth"
+  UPLOAD_DIR = "./uploads"
 
 [http_service]
   internal_port = 8080
@@ -15,7 +16,11 @@ primary_region = "ewr"
   min_machines_running = 1
 
 [[vm]]
-  memory = '512mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+[[statics]]
+  guest_path = "/app/uploads"
+  url_prefix = "/uploads"
 
