@@ -15,6 +15,14 @@ primary_region = "ewr"
   auto_stop_machines = "off"
   min_machines_running = 1
 
+[[http_service.checks]]
+    grace_period = "60s"
+    interval = "15s"
+    method = "get"
+    path = "/"
+    protocol = "http"
+    timeout = "10s"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
