@@ -296,7 +296,6 @@ function formatAgentResults(data, currentQuery) {
         "<thead><tr><th>#</th><th>BIN</th><th>County</th><th>Carries</th><th>Crosses</th><th>Spans</th><th>Location</th><th>Maps</th></tr></thead>";
       html += "<tbody>";
       resultData.forEach((bridge, idx) => {
-        // Calculate correct row number based on page
         const baseIndex = pagination
           ? (pagination.page - 1) * pagination.per_page
           : 0;
@@ -305,24 +304,47 @@ function formatAgentResults(data, currentQuery) {
         const lat = bridge.latitude;
         const lng = bridge.longitude;
 
-        // Escape quotes to prevent JavaScript errors in the onclick function
         const safeBin = (bridge.bin || 'N/A').replace(/'/g, "\\'");
         const safeCarried = (bridge.carried || 'N/A').replace(/'/g, "\\'");
         const safeCrossed = (bridge.crossed || 'N/A').replace(/'/g, "\\'");
 
-        let mapActions = '<span style="color: #999;">N/A</span>';
+        let mapActions = '<span style="color: #ccc; font-size: 0.9em;">No Coords</span>';
 
         if (lat && lng) {
-            const localBtn = `<button 
-                onclick="showOnMap(${lat}, ${lng}, '${safeBin}', '${safeCarried}', '${safeCrossed}')" 
-                title="Show on map below"
-                style="cursor: pointer; background: none; border: none; color: #1abc9c; font-weight: bold; margin-right: 5px; text-decoration: underline;">
-                Local Map
-            </button>`;
+            // Flex container for perfect left-alignment
+            mapActions = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button 
+                    onclick="showOnMap(${lat}, ${lng}, '${safeBin}', '${safeCarried}', '${safeCrossed}')" 
+                    title="Show on map below"
+                    style="
+                        cursor: pointer; 
+                        background: none; 
+                        border: none; 
+                        padding: 0; 
+                        color: #1abc9c; 
+                        font-weight: 600; 
+                        font-size: 0.85em;
+                        font-family: inherit;
+                        text-decoration: underline;
+                    ">
+                    Local Map
+                </button>
 
-            const googleLink = `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color: #3498db; text-decoration: none; font-size: 0.9em;">Google Maps</a>`;
+                <span style="color: #ddd;">|</span>
 
-            mapActions = `${localBtn} | ${googleLink}`;
+                <a href="https://www.google.com/maps?q=${lat},${lng}" 
+                   target="_blank" 
+                   title="Open in Google Maps"
+                   style="
+                        color: #3498db; 
+                        text-decoration: none; 
+                        font-weight: 600; 
+                        font-size: 0.85em;
+                   ">
+                   Google Maps
+                </a>
+            </div>`;
         }
 
         html += `<tr>
@@ -332,7 +354,7 @@ function formatAgentResults(data, currentQuery) {
             <td>${bridge.carried || "N/A"}</td>
             <td>${bridge.crossed || "N/A"}</td>
             <td>${bridge.spans || "N/A"}</td>
-            <td>${lat && lng ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}` : "N/A"}</td>
+            <td style="color: #666; font-size: 0.85em;">${lat && lng ? `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}` : "N/A"}</td>
             <td>${mapActions}</td>
           </tr>`;
       });
