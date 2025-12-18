@@ -308,30 +308,36 @@ function formatAgentResults(data, currentQuery) {
         const safeCarried = (bridge.carried || 'N/A').replace(/'/g, "\\'");
         const safeCrossed = (bridge.crossed || 'N/A').replace(/'/g, "\\'");
 
+        // Default N/A style
         let mapActions = '<span style="color: #ccc; font-size: 0.9em;">No Coords</span>';
 
         if (lat && lng) {
-            // Flex container for perfect left-alignment
+            // Container: Flexbox for alignment, no borders
             mapActions = `
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
                 <button 
                     onclick="showOnMap(${lat}, ${lng}, '${safeBin}', '${safeCarried}', '${safeCrossed}')" 
                     title="Show on map below"
                     style="
                         cursor: pointer; 
-                        background: none; 
-                        border: none; 
+                        background: transparent; 
+                        border: 0; 
+                        outline: none;
+                        box-shadow: none;
                         padding: 0; 
+                        margin: 0;
                         color: #1abc9c; 
                         font-weight: 600; 
-                        font-size: 0.85em;
+                        font-size: 0.95em; /* INCREASED SIZE */
                         font-family: inherit;
-                        text-decoration: underline;
-                    ">
+                        text-decoration: none;
+                    "
+                    onmouseover="this.style.textDecoration='underline'"
+                    onmouseout="this.style.textDecoration='none'">
                     Local Map
                 </button>
 
-                <span style="color: #ddd;">|</span>
+                <span style="color: #666; font-size: 0.95em;">|</span>
 
                 <a href="https://www.google.com/maps?q=${lat},${lng}" 
                    target="_blank" 
@@ -340,8 +346,10 @@ function formatAgentResults(data, currentQuery) {
                         color: #3498db; 
                         text-decoration: none; 
                         font-weight: 600; 
-                        font-size: 0.85em;
-                   ">
+                        font-size: 0.95em; /* INCREASED SIZE */
+                   "
+                   onmouseover="this.style.textDecoration='underline'"
+                   onmouseout="this.style.textDecoration='none'">
                    Google Maps
                 </a>
             </div>`;
