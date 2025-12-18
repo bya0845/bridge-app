@@ -2,29 +2,20 @@ app = "bridge-app"
 primary_region = "ewr"
 
 [build]
-  # Empty build section tells Fly.io to use Dockerfile
-  # Or explicitly specify:
-  # dockerfile = "Dockerfile"
 
 [env]
   PORT = "8080"
   SQLITE_PATH = "./src/data/bridges.db"
   MODEL_CHECKPOINT_PATH = "results/checkpoints/t5-small_best.pth"
-  UPLOAD_DIR = "./uploads"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ["app"]
+  auto_stop_machines = "off"
+  min_machines_running = 1
 
 [[vm]]
-  memory = '1gb'
+  memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
 
-[[statics]]
-  guest_path = "/app/uploads"
-  url_prefix = "/uploads"
